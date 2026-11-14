@@ -7,7 +7,9 @@
  * sniplite closed and both files swapped in, or neither. Replaced files are moved
  * aside as *.old (allowed even while they run); sniplite deletes them on its next start.
  *
- *   sniplite_win_setup_amd64.exe            window with one checkbox (start with Windows)
+ *   sniplite_win_setup_amd64.exe            window with two checkboxes: start with Windows, and
+ *                                           the text recognition module (off unless ticked:
+ *                                           sniplite then downloads it, in its preferences)
  *   sniplite_win_setup_amd64.exe /S         silent; a fresh install turns that on
  *   sniplite_win_setup_amd64.exe /update    silent, keeps the current choice
  * Exit code 0 = installed, 1 = failed or cancelled.
@@ -180,8 +182,9 @@ static void delete_new(void)
             DeleteFileW(tmp);
 }
 
-/* autostart: 1 on, 0 off, -1 leave as it is */
-static bool install(int autostart)
+/* autostart: 1 on, 0 off, -1 leave as it is. ocr: have sniplite download its text
+ * recognition module (its preferences open on that page and begin). */
+static bool install(int autostart, bool ocr)
 {
     int e = SHCreateDirectoryExW(NULL, I.dir, NULL);
     if (e != ERROR_SUCCESS && e != ERROR_ALREADY_EXISTS && e != ERROR_FILE_EXISTS)
@@ -228,7 +231,7 @@ static bool install(int autostart)
         move_retry(o, I.exe, 0);
     }
     if (exists(I.exe)) {
-        WCHAR cmd[MAX_PATH + 16];
+        WCHAR cmd[MAX_PATH + 40];
         wsprintfW(cmd, L"\"%s\" start", I.exe);
         STARTUPINFOW si = {sizeof si};
         PROCESS_INFORMATION pi;
@@ -236,6 +239,14 @@ static bool install(int autostart)
             CreateProcessW(I.exe, cmd, NULL, NULL, FALSE, 0, NULL, I.dir, &si, &pi)) {
             CloseHandle(pi.hThread);
             CloseHandle(pi.hProcess);
+        }
+        if (ok && ocr) {
+            wsprintfW(cmd, L"\"%s\" --settings ocr-install", I.exe);
+            if (CreateProcessW(I.exe, cmd, NULL, NULL, FALSE, CREATE_BREAKAWAY_FROM_JOB, NULL, I.dir, &si, &pi) ||
+                CreateProcessW(I.exe, cmd, NULL, NULL, FALSE, 0, NULL, I.dir, &si, &pi)) {
+                CloseHandle(pi.hThread);
+                CloseHandle(pi.hProcess);
+            }
         }
     }
     return ok;
@@ -263,6 +274,7 @@ static INT_PTR CALLBACK dlg_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         SetWindowTextW(h, T(S_CAPTION));
         SetDlgItemTextW(h, IDC_S_SUB, T(S_SUB));
         SetDlgItemTextW(h, IDC_S_AUTOSTART, T(S_AUTOSTART));
+        SetDlgItemTextW(h, IDC_S_OCR, T(S_OCR));
         SetDlgItemTextW(h, IDOK, T(S_INSTALL));
         SetDlgItemTextW(h, IDCANCEL, T(S_CANCEL));
         WCHAR t[MAX_PATH + 64];
@@ -282,7 +294,7 @@ static INT_PTR CALLBACK dlg_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
             EnableWindow(GetDlgItem(h, IDOK), FALSE);
             EnableWindow(GetDlgItem(h, IDCANCEL), FALSE);
             HCURSOR old = SetCursor(LoadCursorW(NULL, IDC_WAIT));
-            bool ok = install(IsDlgButtonChecked(h, IDC_S_AUTOSTART) == BST_CHECKED);
+            bool ok = install(IsDlgButtonChecked(h, IDC_S_AUTOSTART) == BST_CHECKED, IsDlgButtonChecked(h, IDC_S_OCR) == BST_CHECKED);
             SetCursor(old);
             if (ok) {
                 I.done = true;
@@ -290,6 +302,7 @@ static INT_PTR CALLBACK dlg_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
                 bool own = join(ini, I.dir, L"sniplite.ini") && exists(ini);
                 SetDlgItemTextW(h, IDC_S_PATH, own ? T(S_DONE_OWN) : T(S_DONE));
                 ShowWindow(GetDlgItem(h, IDC_S_AUTOSTART), SW_HIDE);
+                ShowWindow(GetDlgItem(h, IDC_S_OCR), SW_HIDE);
                 ShowWindow(GetDlgItem(h, IDCANCEL), SW_HIDE);
                 SetDlgItemTextW(h, IDOK, T(S_FINISH));
                 EnableWindow(GetDlgItem(h, IDOK), TRUE);
@@ -334,6 +347,6 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmdline, int show)
     lang_init(join(ini, I.dir, L"sniplite.ini") ? ini : L"");
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
     if (silent || update)
-        return install(update || exists(I.exe) ? -1 : 1) ? 0 : 1;
+        return install(update || exists(I.exe) ? -1 : 1, false) ? 0 : 1;
     return (int)lang_dialog_box(inst, IDD_SETUP, NULL, dlg_proc);
 }

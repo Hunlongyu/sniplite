@@ -537,6 +537,10 @@ FUNC ov_cancel
         ENDPROLOG
         cmp byte ptr OV(OV_ACTIVE), 0
         je .Lca_ret
+        cmp byte ptr [rip + ocr_panel_on], 0
+        je .Lca_nopanel
+        call ocr_hide                   /* the text panel goes with the capture */
+.Lca_nopanel:
         cmp byte ptr OV(OV_TE_ON), 0
         je .Lca_timer
         mov byte ptr OV(OV_TE_ON), 0
@@ -997,7 +1001,8 @@ FUNC output_image
         ret
 ENDF
 
-/* void finish(int act): ACT_COPY, ACT_SAVE or ACT_PIN the selection */
+/* void finish(int act): ACT_COPY, ACT_SAVE or ACT_PIN the selection, ACT_OCR its text,
+ * ACT_LONG a long screenshot that begins with it */
 #define FI_OUT 48                       /* Img */
 #define FI_PATH 96                      /* WCHAR[MAX_PATH * 2] */
 #define FI_FRAME (FI_PATH + 2 * W_PATH_CAP)
@@ -1021,6 +1026,17 @@ FUNC finish
         mov dword ptr OV(OV_PHASE), PH_EDIT
         call canvas_free
 .Lfi_edit:
+        call ocr_hide                   /* the text panel belongs to the capture window */
+        cmp ebx, ACT_OCR
+        jne .Lfi_notocr
+        call ocr_copy                   /* the text of the selection to the clipboard (ocr_ui.c) */
+        jmp .Lfi_cancel
+.Lfi_notocr:
+        cmp ebx, ACT_LONG
+        jne .Lfi_picture
+        call long_begin                 /* the selection, growing as the user scrolls (scroll.c) */
+        jmp .Lfi_cancel
+.Lfi_picture:
         /* gone from the screen first: nothing is painted until the next message */
         mov rcx, qword ptr OV(OV_HWND)
         xor edx, edx
@@ -2220,6 +2236,17 @@ FUNC on_button
         call redo
         jmp .Lob_refresh
 5:
+        cmp ebx, B_OCR
+        jne 6f
+        call ocr_panel                  /* the text panel beside the selection (ocr_ui.c) */
+        jmp .Lob_refresh
+6:
+        mov ecx, ACT_OCR
+        cmp ebx, B_OCRCOPY
+        je .Lob_finish
+        mov ecx, ACT_LONG
+        cmp ebx, B_LONG
+        je .Lob_finish
         mov ecx, ACT_PIN
         cmp ebx, B_PIN
         je .Lob_finish

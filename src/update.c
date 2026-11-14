@@ -73,7 +73,8 @@ static void http_close(Http *h)
     memset(h, 0, sizeof *h);
 }
 
-static bool http_get(Http *h, const WCHAR *path, bool follow, DWORD *status)
+/* headers: more request headers, each ending in CR LF, or NULL */
+static bool http_get(Http *h, const WCHAR *host, const WCHAR *path, const WCHAR *headers, bool follow, DWORD *status)
 {
     memset(h, 0, sizeof *h);
     *status = 0;
@@ -84,7 +85,7 @@ static bool http_get(Http *h, const WCHAR *path, bool follow, DWORD *status)
     if (!h->s)
         return false;
     WH.timeouts(h->s, 8000, 8000, 15000, 15000);
-    h->c = WH.connect(h->s, UPDATE_HOST, INTERNET_DEFAULT_HTTPS_PORT, 0);
+    h->c = WH.connect(h->s, host, INTERNET_DEFAULT_HTTPS_PORT, 0);
     if (h->c)
         h->r = WH.request(h->c, L"GET", path, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
     if (!h->r)
@@ -93,7 +94,7 @@ static bool http_get(Http *h, const WCHAR *path, bool follow, DWORD *status)
         DWORD f = WINHTTP_DISABLE_REDIRECTS;
         WH.set_option(h->r, WINHTTP_OPTION_DISABLE_FEATURE, &f, sizeof f);
     }
-    if (!WH.send(h->r, WINHTTP_NO_ADDITIONAL_HEADERS, 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) || !WH.receive(h->r, NULL))
+    if (!WH.send(h->r, headers, headers ? (DWORD)-1 : 0, WINHTTP_NO_REQUEST_DATA, 0, 0, 0) || !WH.receive(h->r, NULL))
         return false;
     DWORD sz = sizeof *status;
     return WH.headers(h->r, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, status,
@@ -143,7 +144,7 @@ void update_check(UpdateResult *r)
         return;
     Http h;
     DWORD status;
-    if (http_get(&h, UPDATE_REPO L"/releases/latest", false, &status)) {
+    if (http_get(&h, UPDATE_HOST, UPDATE_REPO L"/releases/latest", NULL, false, &status)) {
         if (status >= 300 && status < 400) {
             WCHAR loc[1024];
             DWORD sz = sizeof loc;
@@ -189,7 +190,7 @@ bool update_download(const WCHAR *tag, WCHAR *path, int cap, void (*progress)(in
     Http h;
     DWORD status;
     bool ok = false;
-    if (http_get(&h, url, true, &status) && status == 200) {
+    if (http_get(&h, UPDATE_HOST, url, NULL, true, &status) && status == 200) {
         DWORD len = 0, sz = sizeof len;
         if (!WH.headers(h.r, WINHTTP_QUERY_CONTENT_LENGTH | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &len,
                         &sz, WINHTTP_NO_HEADER_INDEX))
@@ -238,6 +239,31 @@ bool update_download(const WCHAR *tag, WCHAR *path, int cap, void (*progress)(in
         mem_free(buf);
     }
     http_close(&h);
+    return ok;
+}
+
+bool http_fetch(const WCHAR *host, const WCHAR *path, const WCHAR *headers, DWORD *status,
+                bool (*sink)(const void *data, DWORD n, void *ctx), void *ctx)
+{
+    *status = 0;
+    if (!wh_load())
+        return false;
+    enum { BUF = 64 * 1024 };
+    BYTE *buf = mem_alloc(BUF);
+    Http h;
+    bool ok = buf && http_get(&h, host, path, headers, true, status) && (*status == 200 || *status == 206);
+    for (DWORD got = 0; ok;) {
+        ok = WH.read(h.r, buf, BUF, &got) != 0;
+        if (!ok || !got)
+            break; /* failed, or the end */
+        if (!sink(buf, got, ctx)) {
+            ok = false; /* the caller has enough, or gave up */
+            break;
+        }
+    }
+    if (buf)
+        http_close(&h);
+    mem_free(buf);
     return ok;
 }
 

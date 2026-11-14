@@ -15,15 +15,21 @@
 <img src="pics/demo-edit.png" alt="Select an area and draw circles, arrows, text and numbers right on it" width="66%">
 <br>
 <img src="pics/demo-select.png" alt="Before a capture, the window or control under the mouse is found for you; the magnifier shows pixels and colors" width="32.5%"> <img src="pics/demo-pin.png" alt="Pin a screenshot or text on top of the screen; the wheel zooms" width="32.5%">
+<br>
+<img src="pics/demo-ocr.png" alt="Read the text of what you select; a table keeps its columns" width="66%">
+<br>
+<img src="pics/demo-long.png" alt="Scroll a page and it is stitched into one long screenshot" width="66%">
 
 </div>
 
 ## Features
 
 - **Fast**: press F1 and the screenshot is there, sooner than in 99% of screenshot tools
-- **Light**: about 220 KB, nothing else to install; the capture and drawing core is written in assembly
+- **Light**: about 280 KB, nothing else to install; the capture and drawing core is written in assembly
 - **Pins**: pin a screenshot on top of every other window, so it stays in view while you work
 - **Complete**: screenshots, pins, arrows, text, mosaic: it is all there
+- **Text recognition**: read the text in a capture, tables included; an optional module that runs entirely on your computer
+- **Long screenshots**: scroll a page and it is stitched together as you go
 - **Clean**: no ads, open source, no logs, no data collected
 - **Multilingual**: 8 languages, following Windows unless you pick one
 
@@ -44,6 +50,9 @@ Get the latest installer from [Releases](https://github.com/MrTangLuyao/sniplite
 | **Enter** | Copy the capture |
 | **Ctrl+S** | Save the capture |
 | **Ctrl+T** | Pin the capture to the screen |
+| **Ctrl+O** | Recognize the text of the selection |
+| **Ctrl+Shift+C** | Copy the text of the selection |
+| **Ctrl+L** | Long screenshot: scroll, and it is stitched |
 | **Esc** | Cancel the capture |
 | **Wheel** | Capturing: pick a bigger or smaller window; on a pin: zoom |
 | **Double-click** | Close a pin |
@@ -62,7 +71,7 @@ The parts that have to be fast (capture, composition, drawing and the capture ov
 
 | Tool | Download | Memory when idle | Hotkey to ready |
 | --- | --- | --- | --- |
-| **sniplite** | 0.3 MB | 11 MB | 12 ms |
+| **sniplite** | 0.4 MB | 11 MB | 12 ms |
 | Snipaste 2.11.3 | 19 MB | 50 MB | 121 ms |
 | PixPin 3.6.6 | 66 MB | 31 MB | 142 ms |
 | Greenshot 1.3.328 | 4 MB | 16 MB | 252 ms |
@@ -70,6 +79,14 @@ The parts that have to be fast (capture, composition, drawing and the capture ov
 | ShareX 22.4.0 | 139 MB | 58 MB | not measured |
 
 <sub>This is an informal test, for reference only.</sub>
+
+**How do I get the text out of a screenshot?**
+
+Select an area and click the text button (Ctrl+O): the text appears in a panel beside the selection, where you can select, edit and copy it. A table keeps its columns and pastes into a spreadsheet as cells, or as Markdown if you prefer. Ctrl+Shift+C copies the text straight away. The first time, sniplite opens Settings so you can download the text recognition module (12 MB): PaddleOCR PP-OCRv6 models running on ONNX Runtime, entirely on your computer.
+
+**How do I take a long screenshot?**
+
+Select the area, click the long screenshot button (Ctrl+L) and scroll the page yourself. sniplite stitches what scrolls by, and a strip beside the area shows the result so far. Enter copies it and Esc cancels; you can also save it, pin it or read its text.
 
 **How much memory does it use?**
 
@@ -97,7 +114,7 @@ Yes. Run `sniplite help` to see it.
 
 ## Settings
 
-<img src="pics/ui/en.png" alt="The five pages of the settings, the shortcut list and the installer">
+<img src="pics/ui/en.png" alt="The six pages of the settings, the shortcut list and the installer">
 
 ## Build it yourself
 

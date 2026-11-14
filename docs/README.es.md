@@ -15,15 +15,21 @@
 <img src="../pics/demo-edit.png" alt="Selecciona una zona y dibuja encima círculos, flechas, texto y números" width="66%">
 <br>
 <img src="../pics/demo-select.png" alt="Antes de capturar, se detecta la ventana o el control bajo el cursor; la lupa muestra píxeles y colores" width="32.5%"> <img src="../pics/demo-pin.png" alt="Fija en pantalla una captura o un texto; la rueda hace zoom" width="32.5%">
+<br>
+<img src="../pics/demo-ocr.png" alt="Lee el texto de la selección; una tabla conserva sus columnas" width="66%">
+<br>
+<img src="../pics/demo-long.png" alt="Desplaza una página y se convierte en una sola captura larga" width="66%">
 
 </div>
 
 ## Características
 
 - **Rápido**: pulsa F1 y la captura está ahí, antes que en el 99 % de las herramientas de captura
-- **Ligero**: unos 220 KB, sin nada más que instalar; el núcleo de captura y dibujo está escrito en ensamblador
+- **Ligero**: unos 280 KB, sin nada más que instalar; el núcleo de captura y dibujo está escrito en ensamblador
 - **Fijar**: fija una captura por encima de todas las ventanas para tenerla a la vista mientras trabajas
 - **Completo**: capturas, imágenes fijadas, flechas, texto, mosaico: no falta nada
+- **Reconocimiento de texto**: lee el texto de una captura, tablas incluidas; un módulo opcional que funciona por completo en tu equipo
+- **Capturas con desplazamiento**: desplaza la página y se va uniendo sola
 - **Limpio**: sin anuncios, de código abierto, sin archivos de registro, sin recopilar datos
 - **Multilingüe**: 8 idiomas; sigue el de Windows salvo que elijas otro
 
@@ -44,6 +50,9 @@ Descarga el instalador más reciente en [Releases](https://github.com/MrTangLuya
 | **Enter** | Copiar la captura |
 | **Ctrl+S** | Guardar la captura |
 | **Ctrl+T** | Fijar la captura en pantalla |
+| **Ctrl+O** | Reconocer el texto de la selección |
+| **Ctrl+Shift+C** | Copiar el texto de la selección |
+| **Ctrl+L** | Captura con desplazamiento: desplaza y se une sola |
 | **Esc** | Cancelar la captura |
 | **Rueda** | Al capturar: elegir una ventana mayor o menor; sobre una imagen fijada: zoom |
 | **Doble clic** | Cerrar una imagen fijada |
@@ -62,7 +71,7 @@ Las partes que deben ser rápidas (captura, composición, dibujo y la pantalla d
 
 | Programa | Descarga | Memoria en reposo | Del atajo a listo |
 | --- | --- | --- | --- |
-| **sniplite** | 0,3 MB | 11 MB | 12 ms |
+| **sniplite** | 0,4 MB | 11 MB | 12 ms |
 | Snipaste 2.11.3 | 19 MB | 50 MB | 121 ms |
 | PixPin 3.6.6 | 66 MB | 31 MB | 142 ms |
 | Greenshot 1.3.328 | 4 MB | 16 MB | 252 ms |
@@ -70,6 +79,14 @@ Las partes que deben ser rápidas (captura, composición, dibujo y la pantalla d
 | ShareX 22.4.0 | 139 MB | 58 MB | sin medir |
 
 <sub>Es una prueba informal, solo como referencia.</sub>
+
+**¿Cómo saco el texto de una captura?**
+
+Selecciona una zona y pulsa el botón de texto (Ctrl+O): el texto aparece en un panel junto a la selección, donde puedes seleccionarlo, editarlo y copiarlo. Una tabla conserva sus columnas y se pega en una hoja de cálculo celda por celda, o como Markdown si lo prefieres. Ctrl+Shift+C copia el texto directamente. La primera vez, sniplite abre los ajustes para descargar el módulo de reconocimiento de texto (12 MB): los modelos PaddleOCR PP-OCRv6 con ONNX Runtime, todo en tu equipo.
+
+**¿Cómo hago una captura larga?**
+
+Selecciona la zona, pulsa el botón de captura con desplazamiento (Ctrl+L) y desplaza la página tú mismo. sniplite une lo que va pasando, y una franja junto a la zona muestra el resultado. Enter copia y Esc cancela; también puedes guardarla, fijarla o leer su texto.
 
 **¿Cuánta memoria usa?**
 
@@ -97,7 +114,7 @@ Sí. Ejecuta `sniplite help` para ver los comandos.
 
 ## Ajustes
 
-<img src="../pics/ui/es.png" alt="Las cinco pestañas de los ajustes, la lista de atajos y el instalador">
+<img src="../pics/ui/es.png" alt="Las seis pestañas de los ajustes, la lista de atajos y el instalador">
 
 ## Compilarlo tú mismo
 

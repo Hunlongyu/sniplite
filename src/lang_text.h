@@ -266,6 +266,11 @@ X(S_PATH,
 X(S_AUTOSTART,
   "开机启动", "開機啟動", "Start with Windows", "Windows 起動時に実行", "Windows 시작 시 실행",
   "Lancer au démarrage", "Mit Windows starten", "Iniciar con Windows")
+X(S_OCR,
+  "同时安装文字识别模块（另下载 12 MB）", "同時安裝文字辨識模組（另下載 12 MB）", "Also install text recognition (12 MB download)",
+  "文字認識モジュールも導入 (12 MB ダウンロード)", "텍스트 인식 모듈도 설치 (12 MB 다운로드)",
+  "Installer aussi la reconnaissance de texte (12 Mo)", "Texterkennung mitinstallieren (12 MB Download)",
+  "Instalar también el reconocimiento de texto (12 MB)")
 X(S_INSTALL, "安装", "安裝", "Install", "インストール", "설치", "Installer", "Installieren", "Instalar")
 X(S_CANCEL, "取消", "取消", "Cancel", "キャンセル", "취소", "Annuler", "Abbrechen", "Cancelar")
 X(S_DONE_OWN,
@@ -513,11 +518,12 @@ X(SETTINGS_TITLE,
 X(SHORTCUTS_TITLE,
   "sniplite 快捷键", "sniplite 快速鍵", "sniplite Shortcuts", "sniplite ショートカット", "sniplite 단축키",
   "Raccourcis de sniplite", "sniplite-Tastenkürzel", "Atajos de sniplite")
-/* the five tabs, in the order of PG_* */
+/* the tabs, in the order of PG_* */
 X(TAB_GENERAL, "常规", "一般", "General", "全般", "일반", "Général", "Allgemein", "General")
 X(TAB_CAPTURE, "截屏", "截圖", "Capture", "キャプチャ", "캡처", "Capture", "Aufnahme", "Captura")
 X(TAB_HOTKEYS, "控制", "快速鍵", "Hotkeys", "ホットキー", "단축키", "Raccourcis", "Tasten", "Atajos")
 X(TAB_UPDATE, "更新", "更新", "Update", "更新", "업데이트", "Mise à jour", "Update", "Actualización")
+X(TAB_OCR, "文字识别", "文字辨識", "OCR", "OCR", "OCR", "OCR", "OCR", "OCR")
 X(TAB_ABOUT, "关于", "關於", "About", "情報", "정보", "À propos", "Info", "Acerca de")
 X(G_AUTOSTART,
   "开机启动", "開機啟動", "Start with Windows", "Windows 起動時に実行", "Windows 시작 시 실행",
@@ -610,6 +616,10 @@ X(SC_COPY, "复制", "複製", "Copy", "コピー", "복사", "Copier", "Kopiere
 X(SC_SAVE, "保存", "儲存", "Save", "保存", "저장", "Enregistrer", "Speichern", "Guardar")
 X(SC_PIN, "贴到屏幕", "貼到螢幕", "Pin to the screen", "画面にピン留め", "화면에 고정", "Épingler à l'écran",
   "Anheften", "Fijar en pantalla")
+X(SC_OCR, "识别文字", "辨識文字", "Recognize text", "文字を読み取る", "텍스트 인식", "Reconnaître le texte", "Text erkennen",
+  "Reconocer texto")
+X(SC_LONG, "长截图", "長截圖", "Scrolling capture", "スクロールキャプチャ", "스크롤 캡처", "Capture défilante", "Scrollaufnahme",
+  "Captura con desplazamiento")
 X(SC_CANCEL, "退出", "取消", "Cancel", "キャンセル", "취소", "Quitter", "Abbrechen", "Cancelar")
 X(SC_UNDO, "撤销", "復原", "Undo", "元に戻す", "실행 취소", "Annuler", "Rückgängig", "Deshacer")
 X(SC_PIN_CLIP,
@@ -779,6 +789,14 @@ X(TIP_QUIT, "退出  Esc", "取消  Esc", "Cancel  Esc", "キャンセル  Esc",
 X(TIP_COPY,
   "复制  Enter / Ctrl+C", "複製  Enter / Ctrl+C", "Copy  Enter / Ctrl+C", "コピー  Enter / Ctrl+C",
   "복사  Enter / Ctrl+C", "Copier  Enter / Ctrl+C", "Kopieren  Enter / Ctrl+C", "Copiar  Enter / Ctrl+C")
+X(TIP_OCR,
+  "识别文字  Ctrl+O", "辨識文字  Ctrl+O", "Recognize text  Ctrl+O", "文字を読み取る  Ctrl+O", "텍스트 인식  Ctrl+O",
+  "Reconnaître le texte  Ctrl+O", "Text erkennen  Ctrl+O", "Reconocer texto  Ctrl+O")
+X(TIP_OCRCOPY, "复制文字  Ctrl+Shift+C", "複製文字  Ctrl+Shift+C", "Copy text  Ctrl+Shift+C", "テキストをコピー  Ctrl+Shift+C",
+  "텍스트 복사  Ctrl+Shift+C", "Copier le texte  Ctrl+Shift+C", "Text kopieren  Ctrl+Shift+C",
+  "Copiar texto  Ctrl+Shift+C")
+X(TIP_LONG, "长截图  Ctrl+L", "長截圖  Ctrl+L", "Scrolling capture  Ctrl+L", "スクロールキャプチャ  Ctrl+L", "스크롤 캡처  Ctrl+L",
+  "Capture défilante  Ctrl+L", "Scrollaufnahme  Ctrl+L", "Captura con desplazamiento  Ctrl+L")
 /* the three sizes */
 X(TIP_SIZE0, "细  (滚轮调节)", "細  (滾輪調整)", "Thin  (wheel to change)", "細い  (ホイールで調整)",
   "가늘게  (휠로 조절)", "Fin  (molette pour changer)", "Dünn  (Mausrad zum Ändern)", "Fino  (rueda para cambiar)")
@@ -820,6 +838,64 @@ X(PM_RESET, "恢复原始大小", "原始大小", "Original size", "元のサイ
   "Originalgröße", "Tamaño original")
 X(PM_CLOSE, "关闭\tEsc", "關閉\tEsc", "Close\tEsc", "閉じる\tEsc", "닫기\tEsc", "Fermer\tEsc", "Schließen\tEsc",
   "Cerrar\tEsc")
+X(PM_OCR, "复制文字", "複製文字", "Copy text", "テキストをコピー", "텍스트 복사", "Copier le texte", "Text kopieren",
+  "Copiar texto")
+
+/* ---- text recognition (ocr.c) ---- */
+X(OCR_WORKING, "正在识别...", "正在辨識...", "Reading the text...", "読み取り中...", "인식 중...",
+  "Lecture du texte...", "Text wird erkannt...", "Leyendo el texto...")
+X(OCR_COPIED, "文字已复制", "文字已複製", "Text copied", "テキストをコピーしました", "텍스트 복사됨", "Texte copié",
+  "Text kopiert", "Texto copiado")
+X(OCR_NONE, "没有识别到文字", "沒有辨識到文字", "No text found", "文字が見つかりません", "텍스트를 찾지 못했습니다",
+  "Aucun texte trouvé", "Kein Text gefunden", "No se encontró texto")
+X(OCR_MISSING,
+  "还没有安装文字识别模块", "尚未安裝文字辨識模組", "The text recognition module is not installed",
+  "文字認識モジュールがインストールされていません", "텍스트 인식 모듈이 설치되지 않았습니다",
+  "Le module de reconnaissance de texte n'est pas installé", "Das Texterkennungsmodul ist nicht installiert",
+  "El módulo de reconocimiento de texto no está instalado")
+X(OCR_FAILED, "识别失败", "辨識失敗", "Text recognition failed", "文字認識に失敗しました", "텍스트 인식 실패",
+  "Échec de la reconnaissance", "Texterkennung fehlgeschlagen", "Error al reconocer el texto")
+X(OCR_COPY, "复制", "複製", "Copy", "コピー", "복사", "Copier", "Kopieren", "Copiar")
+X(OCR_TABLE, "表格", "表格", "Table", "表", "표", "Tableau", "Tabelle", "Tabla")
+
+/* ---- the long screenshot (scroll.c) ---- */
+X(LONG_HINT, "滚动页面，自动拼接", "捲動頁面，自動拼接", "Scroll the page: it is stitched as you go", "ページをスクロールすると自動でつなぎます",
+  "페이지를 스크롤하면 자동으로 이어 붙입니다", "Faites défiler la page : elle est assemblée au fur et à mesure",
+  "Seite scrollen: sie wird laufend zusammengesetzt", "Desplaza la página: se va uniendo sola")
+X(LONG_LOST, "滚得太快了，往回滚一点", "捲得太快了，往回捲一點", "Too fast: scroll back a little", "速すぎます。少し戻してください", "너무 빠릅니다. 조금 되돌려 주세요",
+  "Trop vite : revenez un peu en arrière", "Zu schnell: ein Stück zurückscrollen",
+  "Demasiado rápido: vuelve un poco atrás")
+X(LONG_FULL, "已经到最大长度", "已達最大長度", "As long as it can get", "これ以上は長くできません", "최대 길이에 도달했습니다",
+  "Longueur maximale atteinte", "Maximale Länge erreicht", "Longitud máxima alcanzada")
+
+/* ---- preferences: the text recognition page (settings.c, ocr_get.c) ---- */
+X(O_STATE_NONE, "文字识别模块：未安装", "文字辨識模組：未安裝", "Text recognition module: not installed", "文字認識モジュール: 未インストール",
+  "텍스트 인식 모듈: 설치되지 않음", "Module de reconnaissance de texte : non installé", "Texterkennungsmodul: nicht installiert",
+  "Módulo de reconocimiento de texto: no instalado")
+X(O_STATE_OK, "文字识别模块：已安装（%d MB）", "文字辨識模組：已安裝（%d MB）", "Text recognition module: installed (%d MB)",
+  "文字認識モジュール: インストール済み (%d MB)", "텍스트 인식 모듈: 설치됨 (%d MB)", "Module de reconnaissance de texte : installé (%d Mo)",
+  "Texterkennungsmodul: installiert (%d MB)", "Módulo de reconocimiento de texto: instalado (%d MB)")
+X(O_INSTALL_BTN, "下载并安装", "下載並安裝", "Download and install", "ダウンロードして導入", "다운로드 및 설치", "Télécharger et installer",
+  "Laden und installieren", "Descargar e instalar")
+X(O_CANCEL_BTN, "取消", "取消", "Cancel", "キャンセル", "취소", "Annuler", "Abbrechen", "Cancelar")
+X(O_REMOVE_BTN, "删除模块", "移除模組", "Remove", "削除", "제거", "Supprimer", "Entfernen", "Quitar")
+X(O_CHECK_FAILED, "下载的文件校验没有通过，请再试一次。", "下載的檔案驗證失敗，請再試一次。", "The download did not pass verification. Try again.",
+  "ダウンロードしたファイルを検証できませんでした。もう一度お試しください。", "다운로드한 파일을 확인하지 못했습니다. 다시 시도하세요.",
+  "Le fichier téléchargé n'a pas pu être vérifié. Réessayez.",
+  "Der Download hat die Prüfung nicht bestanden. Bitte erneut versuchen.",
+  "La descarga no superó la verificación. Inténtalo de nuevo.")
+X(O_WRITE_FAILED, "无法写入程序所在的文件夹。", "無法寫入程式所在的資料夾。", "Cannot write to the program's folder.", "プログラムのフォルダーに書き込めません。",
+  "프로그램 폴더에 쓸 수 없습니다.", "Impossible d'écrire dans le dossier du programme.",
+  "In den Programmordner kann nicht geschrieben werden.", "No se puede escribir en la carpeta del programa.")
+X(O_HINT,
+  "可选模块，下载约 12 MB，装好后占 22 MB。用来识别截图里的文字和表格，全部在本机完成，不联网。\n模型是 PaddleOCR PP-OCRv6，运行库是 ONNX Runtime，分别从 ModelScope 和 PyPI 下载。",
+  "選用模組，下載約 12 MB，安裝後佔 22 MB。用來辨識截圖裡的文字和表格，全部在本機完成，不連網。\n模型是 PaddleOCR PP-OCRv6，執行庫是 ONNX Runtime，分別從 ModelScope 和 PyPI 下載。",
+  "Optional: a 12 MB download, 22 MB installed. It reads the text and tables in a capture, entirely on this computer.\nModels: PaddleOCR PP-OCRv6. Runtime: ONNX Runtime. Downloaded from ModelScope and PyPI.",
+  "オプション: ダウンロード約 12 MB、導入後 22 MB。キャプチャ内の文字と表を、このパソコンだけで読み取ります。\nモデルは PaddleOCR PP-OCRv6、ランタイムは ONNX Runtime。ModelScope と PyPI から取得します。",
+  "선택 모듈: 다운로드 약 12 MB, 설치 후 22 MB. 캡처의 글자와 표를 이 컴퓨터에서만 읽습니다.\n모델은 PaddleOCR PP-OCRv6, 런타임은 ONNX Runtime이며 ModelScope와 PyPI에서 받습니다.",
+  "Facultatif : 12 Mo à télécharger, 22 Mo installés. Lit le texte et les tableaux d'une capture, entièrement sur cet ordinateur.\nModèles : PaddleOCR PP-OCRv6. Moteur : ONNX Runtime. Sources : ModelScope et PyPI.",
+  "Optional: 12 MB Download, 22 MB installiert. Liest Text und Tabellen einer Aufnahme, vollständig auf diesem Computer.\nModelle: PaddleOCR PP-OCRv6. Laufzeit: ONNX Runtime. Geladen von ModelScope und PyPI.",
+  "Opcional: 12 MB de descarga, 22 MB instalado. Lee el texto y las tablas de una captura, todo en este equipo.\nModelos: PaddleOCR PP-OCRv6. Motor: ONNX Runtime. Se descargan de ModelScope y PyPI.")
 
 /* ---- the save dialog (image.S); | stands for the separator between filter parts ---- */
 X(SAVE_FILTER,

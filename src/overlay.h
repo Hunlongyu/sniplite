@@ -18,6 +18,11 @@ void ov_pin_hotkey(void); /* pin hotkey pressed while capturing */
 void ov_cancel(void);
 bool ov_last_timing(OvTiming *t); /* false before the first capture */
 
+/* scroll.c: the long screenshot. long_begin is called by the capture, which closes
+ * right after: its selection becomes the region that grows as the user scrolls. */
+void long_begin(void);
+void long_cancel(void);
+
 #ifdef SNIPLITE_DEMO
 /* README image generator only (tools/mkdemo.c). Tool ids follow the toolbar:
  * 1 rect, 2 ellipse, 3 line, 4 arrow, 5 pen, 6 marker, 7 mosaic, 8 text, 9 number. */

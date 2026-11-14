@@ -11,7 +11,7 @@ IDR_APP_COM RCDATA "sniplite.com"
 
 /* Places and sizes only: the texts come from src/lang_text.h and the font is replaced
  * by the one of the language in use (src/lang.c). */
-IDD_SETUP DIALOGEX 0, 0, 236, 112
+IDD_SETUP DIALOGEX 0, 0, 236, 127
 STYLE DS_SHELLFONT | DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_APPWINDOW
 CAPTION "sniplite"
@@ -22,13 +22,14 @@ BEGIN
     LTEXT           "", IDC_S_SUB, 42, 27, 186, 10
     LTEXT           "", IDC_S_PATH, 12, 50, 214, 20
     AUTOCHECKBOX    "", IDC_S_AUTOSTART, 12, 74, 214, 12, WS_TABSTOP
-    DEFPUSHBUTTON   "", IDOK, 118, 91, 54, 15
-    PUSHBUTTON      "", IDCANCEL, 176, 91, 54, 15
+    AUTOCHECKBOX    "", IDC_S_OCR, 12, 89, 214, 12, WS_TABSTOP
+    DEFPUSHBUTTON   "", IDOK, 118, 106, 54, 15
+    PUSHBUTTON      "", IDCANCEL, 176, 106, 54, 15
 END
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 1,2,1,0
-PRODUCTVERSION 1,2,1,0
+FILEVERSION 1,3,0,0
+PRODUCTVERSION 1,3,0,0
 FILEOS VOS_NT_WINDOWS32
 FILETYPE VFT_APP
 BEGIN
@@ -37,9 +38,9 @@ BEGIN
     BLOCK "040904B0"
     BEGIN
       VALUE "FileDescription", "sniplite setup"
-      VALUE "FileVersion", "1.2.1"
+      VALUE "FileVersion", "1.3.0"
       VALUE "ProductName", "sniplite"
-      VALUE "ProductVersion", "1.2.1"
+      VALUE "ProductVersion", "1.3.0"
       VALUE "OriginalFilename", "sniplite_win_setup_amd64.exe"
       VALUE "LegalCopyright", "MIT License"
     END

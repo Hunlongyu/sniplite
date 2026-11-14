@@ -3,6 +3,7 @@
  * and sniplite.ini next to this exe. Never deletes anything recursively; the folder
  * itself is only removed when it is empty. The running exe is deleted by a small
  * hidden cmd.exe after this process exits. */
+#include "ocr.h"
 #include "common.h"
 #include "install.h"
 #include "lang.h"
@@ -82,6 +83,8 @@ int uninstall_main(bool silent)
     if (special(get, CSIDL_STARTUP, STARTUP_LNK, p))
         DeleteFileW(p);
 
+    for (int i = 0; i < 20 && !ocr_remove(); i++) /* the text recognition module; its helper may take a moment to leave */
+        Sleep(100);
     static const WCHAR *files[] = {L"sniplite.com", L"sniplite.ini", L"sniplite.exe.new", L"sniplite.com.new"};
     for (int i = 0; i < COUNTOF(files); i++)
         if (join(p, dir, files[i]))

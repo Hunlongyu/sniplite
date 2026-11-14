@@ -60,11 +60,20 @@
 #define IDC_U_INSTALL 184
 #define IDC_U_AUTO 185
 
+/* preferences: the text recognition page */
+#define IDD_PAGE_OCR 186
+#define IDC_O_STATE 187
+#define IDC_O_INSTALL 188
+#define IDC_O_REMOVE 189
+#define IDC_O_BAR 190
+#define IDC_O_STATUS 191
+
 /* installer */
 #define IDD_SETUP 200
 #define IDC_S_TITLE 201
 #define IDC_S_SUB 202
 #define IDC_S_PATH 203
 #define IDC_S_AUTOSTART 204
+#define IDC_S_OCR 205
 #define IDR_APP_EXE 210
 #define IDR_APP_COM 211

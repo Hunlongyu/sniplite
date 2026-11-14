@@ -15,15 +15,21 @@
 <img src="../pics/demo-edit.png" alt="Einen Bereich wählen und direkt darauf Kreise, Pfeile, Text und Nummern zeichnen" width="66%">
 <br>
 <img src="../pics/demo-select.png" alt="Vor der Aufnahme wird das Fenster oder Element unter der Maus erkannt; die Lupe zeigt Pixel und Farben" width="32.5%"> <img src="../pics/demo-pin.png" alt="Einen Screenshot oder Text über allen Fenstern anheften; das Mausrad zoomt" width="32.5%">
+<br>
+<img src="../pics/demo-ocr.png" alt="Den Text der Auswahl lesen; eine Tabelle behält ihre Spalten" width="66%">
+<br>
+<img src="../pics/demo-long.png" alt="Eine Seite scrollen: daraus wird ein einziger langer Screenshot" width="66%">
 
 </div>
 
 ## Merkmale
 
 - **Schnell**: F1 drücken, und der Screenshot ist da, schneller als bei 99 % der Screenshot-Programme
-- **Schlank**: etwa 220 KB, nichts weiter zu installieren; der Kern für Aufnahme und Zeichnen ist in Assembler geschrieben
+- **Schlank**: etwa 280 KB, nichts weiter zu installieren; der Kern für Aufnahme und Zeichnen ist in Assembler geschrieben
 - **Pins**: einen Screenshot über allen Fenstern anheften, damit er beim Arbeiten im Blick bleibt
 - **Komplett**: Screenshots, Pins, Pfeile, Text, Verpixeln, alles dabei
+- **Texterkennung**: liest den Text einer Aufnahme, auch Tabellen; ein optionales Modul, das vollständig auf dem eigenen Computer läuft
+- **Scrollaufnahmen**: Seite scrollen, sie wird laufend zusammengesetzt
 - **Sauber**: keine Werbung, Open Source, keine Protokolle, keine Datensammlung
 - **Mehrsprachig**: 8 Sprachen; richtet sich nach Windows, solange Sie keine wählen
 
@@ -44,6 +50,9 @@ Den neuesten Installer gibt es unter [Releases](https://github.com/MrTangLuyao/s
 | **Enter** | Aufnahme kopieren |
 | **Ctrl+S** | Aufnahme speichern |
 | **Ctrl+T** | Aufnahme anheften |
+| **Ctrl+O** | Text der Auswahl erkennen |
+| **Ctrl+Shift+C** | Text der Auswahl kopieren |
+| **Ctrl+L** | Scrollaufnahme: scrollen, sie wird zusammengesetzt |
 | **Esc** | Aufnahme abbrechen |
 | **Mausrad** | Bei der Aufnahme: größeres oder kleineres Fenster wählen; auf einem Pin: zoomen |
 | **Doppelklick** | Pin schließen |
@@ -62,7 +71,7 @@ Die Teile, die schnell sein müssen (Aufnahme, Komposition, Zeichnen und Aufnahm
 
 | Programm | Download | Speicher im Leerlauf | Vom Tastenkürzel bis bereit |
 | --- | --- | --- | --- |
-| **sniplite** | 0,3 MB | 11 MB | 12 ms |
+| **sniplite** | 0,4 MB | 11 MB | 12 ms |
 | Snipaste 2.11.3 | 19 MB | 50 MB | 121 ms |
 | PixPin 3.6.6 | 66 MB | 31 MB | 142 ms |
 | Greenshot 1.3.328 | 4 MB | 16 MB | 252 ms |
@@ -70,6 +79,14 @@ Die Teile, die schnell sein müssen (Aufnahme, Komposition, Zeichnen und Aufnahm
 | ShareX 22.4.0 | 139 MB | 58 MB | nicht gemessen |
 
 <sub>Das ist ein informeller Test, nur zur Orientierung.</sub>
+
+**Wie bekomme ich den Text aus einem Screenshot?**
+
+Einen Bereich auswählen und auf die Text-Schaltfläche klicken (Ctrl+O): Der Text erscheint in einem Feld neben der Auswahl und lässt sich markieren, bearbeiten und kopieren. Eine Tabelle behält ihre Spalten und landet in einer Tabellenkalkulation Zelle für Zelle, auf Wunsch auch als Markdown. Ctrl+Shift+C kopiert den Text sofort. Beim ersten Mal öffnet sniplite die Einstellungen, dort lässt sich das Texterkennungsmodul laden (12 MB): PaddleOCR-Modelle PP-OCRv6 mit ONNX Runtime, vollständig auf dem eigenen Computer.
+
+**Wie mache ich eine Scrollaufnahme?**
+
+Den Bereich auswählen, auf die Schaltfläche für die Scrollaufnahme klicken (Ctrl+L) und die Seite selbst scrollen. sniplite setzt zusammen, was vorbeiläuft, und ein Streifen neben dem Bereich zeigt das Ergebnis. Enter kopiert, Esc bricht ab; speichern, anheften oder den Text erkennen geht ebenfalls.
 
 **Wie viel Speicher braucht es?**
 
@@ -97,7 +114,7 @@ Ja. `sniplite help` zeigt alle Befehle.
 
 ## Einstellungen
 
-<img src="../pics/ui/de.png" alt="Die fünf Seiten der Einstellungen, die Liste der Tastenkürzel und der Installer">
+<img src="../pics/ui/de.png" alt="Die sechs Seiten der Einstellungen, die Liste der Tastenkürzel und der Installer">
 
 ## Selbst bauen
 

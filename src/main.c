@@ -1,11 +1,12 @@
 /* sniplite.exe: the background process (hotkeys, tray icon, capture overlay, pins, IPC),
  * plus the internal helper modes (--save-dialog, --settings, --shortcuts,
- * --update-check, --uninstall), each its own short-lived process. */
+ * --update-check, --ocr, --uninstall), each its own short-lived process. */
 #include "common.h"
 #include "config.h"
 #include "image.h"
 #include "install.h"
 #include "lang.h"
+#include "ocr.h"
 #include "overlay.h"
 #include "pin.h"
 #include "settings.h"
@@ -397,12 +398,14 @@ static bool run_helper(const WCHAR *args, bool quiet)
     return ok;
 }
 
-/* page: NULL, or "update" to open the window on the update tab (an open window switches) */
-static bool settings_open(const WCHAR *page)
+/* page: NULL, or the tab to open the window on: "update", "ocr" (an open window switches) */
+bool settings_open(const WCHAR *page)
 {
+    WCHAR args[40] = L" --settings ";
+    lstrcpynW(args + 12, page ? page : L"", COUNTOF(args) - 12);
     if (D.settings) {
         if (page)
-            return run_helper(L" --settings update", false); /* finds the open window and tells it */
+            return run_helper(args, false); /* finds the open window and tells it */
         HWND w = ipc_find_dialog(SETTINGS_MARK);
         if (w) {
             ShowWindow(w, SW_RESTORE);
@@ -415,7 +418,7 @@ static bool settings_open(const WCHAR *page)
         return false;
     Str cmd = {0};
     str_add_quoted(&cmd, exe);
-    str_add(&cmd, page ? L" --settings update" : L" --settings");
+    str_add(&cmd, args);
     STARTUPINFOW si = {sizeof si};
     PROCESS_INFORMATION pi;
     AllowSetForegroundWindow(ASFW_ANY);
@@ -659,8 +662,14 @@ static int cmd_run(int argc, WCHAR **argv, const WCHAR *cwd, Str *out)
             update_notify(argv[1]);
         return EXIT_OK;
     }
-    if (arg_eq(c, L"settings")) { /* `settings update` opens the update tab */
-        if (!settings_open(argc > 1 && arg_eq(argv[1], L"update") ? L"update" : NULL)) {
+    if (arg_eq(c, L"_cancel")) { /* from the text panel: its text was copied, the capture is done */
+        ov_cancel();
+        long_cancel();
+        return EXIT_OK;
+    }
+    if (arg_eq(c, L"settings")) { /* `settings update`, `settings ocr`: on that tab */
+        const WCHAR *page = argc > 1 && arg_eq(argv[1], L"update") ? L"update" : argc > 1 && arg_eq(argv[1], L"ocr") ? L"ocr" : NULL;
+        if (!settings_open(page)) {
             str_add(out, T(ERR_SETTINGS));
             return EXIT_FAIL;
         }
@@ -977,6 +986,8 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmdline, int show)
         return shortcuts_main(inst);
     if (argc > 1 && arg_eq(argv[1], L"--update-check"))
         return update_check_main();
+    if (argc > 1 && (arg_eq(argv[1], L"--ocr") || arg_eq(argv[1], L"--ocr-file")))
+        return ocr_helper(argc, argv);
     if (argc > 1 && arg_eq(argv[1], L"--uninstall"))
         return uninstall_main(argc > 2 && (arg_eq(argv[2], L"/S") || arg_eq(argv[2], L"-S")));
 

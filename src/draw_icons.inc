@@ -153,5 +153,65 @@
         .long 0x41033333, 0x416B3333
         .long 0x41800000, 0x40B9999A
         .byte 0, 0, 0, 0
+/* recognize text: the corners of a frame around a letter T */
+.Lic_ocr:
+        .byte 1, 3, 0, 0
+        .long 0x40400000, 0x40F00000
+        .long 0x40400000, 0x40400000
+        .long 0x40F00000, 0x40400000
+        .byte 1, 3, 0, 0
+        .long 0x41480000, 0x40400000
+        .long 0x41880000, 0x40400000
+        .long 0x41880000, 0x40F00000
+        .byte 1, 3, 0, 0
+        .long 0x41880000, 0x41480000
+        .long 0x41880000, 0x41880000
+        .long 0x41480000, 0x41880000
+        .byte 1, 3, 0, 0
+        .long 0x40F00000, 0x41880000
+        .long 0x40400000, 0x41880000
+        .long 0x40400000, 0x41480000
+        .byte 1, 2, 0, 0
+        .long 0x40E00000, 0x40F00000
+        .long 0x41500000, 0x40F00000
+        .byte 1, 2, 0, 0
+        .long 0x41200000, 0x40F00000
+        .long 0x41200000, 0x41580000
+        .byte 0, 0, 0, 0
+/* copy text: a letter T and, at its lower right, a clipboard (a board, its clip filled) */
+.Lic_ocrcopy:
+        .byte 1, 2, 0, 0
+        .long 0x40000000, 0x40400000
+        .long 0x41100000, 0x40400000
+        .byte 1, 2, 0, 0
+        .long 0x40B00000, 0x40400000
+        .long 0x40B00000, 0x41380000
+        .byte 1, 5, 0, 0
+        .long 0x41100000, 0x41080000
+        .long 0x418C0000, 0x41080000
+        .long 0x418C0000, 0x418C0000
+        .long 0x41100000, 0x418C0000
+        .long 0x41100000, 0x41080000
+        .byte 2, 4, 0, 0
+        .long 0x41340000, 0x40D00000
+        .long 0x41740000, 0x40D00000
+        .long 0x41740000, 0x41200000
+        .long 0x41340000, 0x41200000
+        .byte 0, 0, 0, 0
+/* long screenshot: a frame open at the bottom, and an arrow leaving it downwards */
+.Lic_long:
+        .byte 1, 4, 0, 0
+        .long 0x40800000, 0x41100000
+        .long 0x40800000, 0x40400000
+        .long 0x41800000, 0x40400000
+        .long 0x41800000, 0x41100000
+        .byte 1, 2, 0, 0
+        .long 0x41200000, 0x40F00000
+        .long 0x41200000, 0x41880000
+        .byte 1, 3, 0, 0
+        .long 0x40D00000, 0x41580000
+        .long 0x41200000, 0x41880000
+        .long 0x41580000, 0x41580000
+        .byte 0, 0, 0, 0
 /* the mosaic icon's grid lines, (float)(3 + 3.5 * i) */
 .Lic_mosaic_grid: .long 0x40400000, 0x40D00000, 0x41200000, 0x41580000, 0x41880000

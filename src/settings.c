@@ -1,5 +1,5 @@
-/* Preferences window: five tabs (general, capture, hotkeys, update, about); changes
- * apply immediately.
+/* Preferences window: six tabs (general, capture, hotkeys, update, text recognition,
+ * about); changes apply immediately.
  *
  * Every change is written to sniplite.ini and the background process is told to
  * reload it (`_reload`), which also reports whether each hotkey could be
@@ -14,6 +14,7 @@
 #include "resource.h"
 #include "install.h"
 #include "lang.h"
+#include "ocr.h"
 #include "update.h"
 #include <commctrl.h>
 #include <shlobj.h>
@@ -30,7 +31,7 @@ typedef HRESULT(WINAPI *PFN_DrawThemeParentBackground)(HWND, HDC, const RECT *);
 #define HKN_DONE 2
 #define ETDT_ENABLETAB_ 6
 
-enum { PG_GENERAL, PG_CAPTURE, PG_HOTKEYS, PG_UPDATE, PG_ABOUT, PG_COUNT };
+enum { PG_GENERAL, PG_CAPTURE, PG_HOTKEYS, PG_UPDATE, PG_OCR, PG_ABOUT, PG_COUNT };
 enum { RI_NONE, RI_CLEAR, RI_OK, RI_FAIL, RI_HELP }; /* round icons */
 
 static struct {
@@ -48,6 +49,9 @@ static struct {
     WCHAR tag[32];   /* newer release found by the check */
     WCHAR setup[MAX_PATH];
     bool reopen;     /* the language changed: show the window again, in that language */
+    bool ocr_busy;   /* the text recognition module is being downloaded */
+    bool ocr_auto;   /* opened to download it: begin at once */
+    volatile LONG ocr_cancel;
     POINT at;        /* where it was */
 } S;
 
@@ -408,6 +412,9 @@ static const Shortcut kShortcuts[] = {
     {0, S_SC_COPY, NULL, S_K_ENTER_DBL, 0},
     {0, S_SC_SAVE, L"Ctrl+S", 0, 0},
     {0, S_SC_PIN, L"Ctrl+T", 0, 0},
+    {0, S_SC_OCR, L"Ctrl+O", 0, 0},
+    {0, S_PM_OCR, L"Ctrl+Shift+C", 0, 0},
+    {0, S_SC_LONG, L"Ctrl+L", 0, 0},
     {0, S_SC_UNDO, L"Ctrl+Z", 0, 0},
     {0, S_SC_CANCEL, L"Esc", 0, 0},
     {1, S_SC_PIN_CLIP, NULL, 0, HK_PIN},
@@ -504,7 +511,9 @@ static void show_help(HWND owner)
 #define WM_APP_UPD_PROGRESS (WM_APP + 21) /* wParam = percent, or -1 when the size is unknown */
 #define WM_APP_UPD_FETCHED (WM_APP + 22)  /* wParam = downloaded */
 #define WM_APP_UPD_DONE (WM_APP + 23)     /* wParam = installer exit code */
-#define WM_APP_SHOW_PAGE (WM_APP + 24)    /* wParam = page; sent by a second `--settings update` */
+#define WM_APP_SHOW_PAGE (WM_APP + 24)    /* wParam = page, lParam = begin its download; from a second `--settings <page>` */
+#define WM_APP_OCR_PROGRESS (WM_APP + 25) /* wParam = percent */
+#define WM_APP_OCR_DONE (WM_APP + 26)     /* wParam = OCR_GET_... */
 
 static UpdateResult g_upd;
 static bool g_relaunch; /* updated: reopen this window from the new exe */
@@ -692,6 +701,71 @@ static void upd_done(DWORD code)
     upd_buttons(true, true);
 }
 
+/* ---- text recognition page: the optional module, downloaded on a worker thread ------ */
+
+static void ocr_show(void)
+{
+    HWND o = S.page[PG_OCR], f = GetFocus();
+    bool there = ocr_installed();
+    WCHAR t[160];
+    if (there)
+        wsprintfW(t, T(O_STATE_OK), ocr_size_mb());
+    else
+        lstrcpynW(t, T(O_STATE_NONE), COUNTOF(t));
+    SetDlgItemTextW(o, IDC_O_STATE, t);
+    SetDlgItemTextW(o, IDC_O_INSTALL, S.ocr_busy ? T(O_CANCEL_BTN) : T(O_INSTALL_BTN));
+    bool install = S.ocr_busy ? !S.ocr_cancel : !there, remove = !S.ocr_busy && there;
+    if ((!install && f == GetDlgItem(o, IDC_O_INSTALL)) || (!remove && f == GetDlgItem(o, IDC_O_REMOVE)))
+        SendMessageW(S.dlg, WM_NEXTDLGCTL, (WPARAM)S.tabs, TRUE); /* keep Esc/Tab working */
+    EnableWindow(GetDlgItem(o, IDC_O_INSTALL), install);
+    EnableWindow(GetDlgItem(o, IDC_O_REMOVE), remove);
+    ShowWindow(GetDlgItem(o, IDC_O_BAR), S.ocr_busy ? SW_SHOW : SW_HIDE);
+}
+
+static void ocr_progress(int pct, void *ctx)
+{
+    (void)ctx;
+    PostMessageW(S.dlg, WM_APP_OCR_PROGRESS, (WPARAM)pct, 0);
+}
+
+static DWORD WINAPI ocr_thread(void *p)
+{
+    (void)p;
+    int r = ocr_get(&S.ocr_cancel, ocr_progress, NULL);
+    PostMessageW(S.dlg, WM_APP_OCR_DONE, (WPARAM)r, 0);
+    return 0;
+}
+
+static void ocr_install(void)
+{
+    if (S.ocr_busy) { /* the button says Cancel now */
+        InterlockedExchange(&S.ocr_cancel, 1);
+        ocr_show();
+        return;
+    }
+    if (ocr_installed())
+        return;
+    S.ocr_cancel = 0;
+    HANDLE t = CreateThread(NULL, 0, ocr_thread, NULL, 0, NULL);
+    if (!t)
+        return;
+    CloseHandle(t);
+    S.ocr_busy = true;
+    SendDlgItemMessageW(S.page[PG_OCR], IDC_O_BAR, PBM_SETPOS, 0, 0);
+    SetDlgItemTextW(S.page[PG_OCR], IDC_O_STATUS, T(U_DOWNLOADING));
+    ocr_show();
+}
+
+static void ocr_done(int result)
+{
+    S.ocr_busy = false;
+    S.ocr_cancel = 0;
+    SetDlgItemTextW(S.page[PG_OCR], IDC_O_STATUS,
+                    result == OCR_GET_NET ? T(U_DOWNLOAD_FAILED) : result == OCR_GET_CHECK ? T(O_CHECK_FAILED)
+                    : result == OCR_GET_WRITE ? T(O_WRITE_FAILED) : L"");
+    ocr_show();
+}
+
 static void ensure_ini(WCHAR *path)
 {
     config_path(path, MAX_PATH);
@@ -721,7 +795,7 @@ static void page_command(HWND page, int id, int code, HWND ctl)
         int lang = (int)SendMessageW(ctl, CB_GETCURSEL, 0, 0) - 1; /* the first entry is LG_AUTO */
         if (code != CBN_SELCHANGE || lang == lang_choice())
             return;
-        if (S.busy) /* a worker thread is about to report to this window */
+        if (S.busy || S.ocr_busy) /* a worker thread is about to report to this window */
             SendMessageW(ctl, CB_SETCURSEL, (WPARAM)(lang_choice() + 1), 0);
         else
             set_language(lang);
@@ -783,6 +857,13 @@ static void page_command(HWND page, int id, int code, HWND ctl)
         break;
     case IDC_U_INSTALL:
         upd_install();
+        break;
+    case IDC_O_INSTALL:
+        ocr_install();
+        break;
+    case IDC_O_REMOVE:
+        SetDlgItemTextW(page, IDC_O_STATUS, ocr_remove() ? L"" : T(O_WRITE_FAILED));
+        ocr_show();
         break;
     case IDC_U_AUTO:
         S.cfg.auto_update = IsDlgButtonChecked(page, IDC_U_AUTO) == BST_CHECKED;
@@ -883,6 +964,8 @@ static const struct {
     {PG_UPDATE, IDC_U_INSTALL, S_U_INSTALL_BTN},
     {PG_UPDATE, IDC_U_AUTO, S_U_AUTO},
     {PG_UPDATE, IDC_HINT, S_U_HINT},
+    {PG_OCR, IDC_O_REMOVE, S_O_REMOVE_BTN},
+    {PG_OCR, IDC_HINT, S_O_HINT},
     {PG_ABOUT, IDC_TAGLINE, S_TAGLINE},
     {PG_ABOUT, IDC_LICENSE, S_A_LICENSE},
 };
@@ -909,7 +992,7 @@ static INT_PTR CALLBACK main_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         SetPropW(h, SETTINGS_MARK, (HANDLE)1);
         SetWindowTextW(h, T(SETTINGS_TITLE));
         static const int ids[PG_COUNT] = {IDD_PAGE_GENERAL, IDD_PAGE_CAPTURE, IDD_PAGE_HOTKEYS, IDD_PAGE_UPDATE,
-                                           IDD_PAGE_ABOUT};
+                                           IDD_PAGE_OCR,     IDD_PAGE_ABOUT};
         RECT rc;
         GetWindowRect(S.tabs, &rc);
         MapWindowPoints(NULL, h, (POINT *)&rc, 2);
@@ -946,12 +1029,17 @@ static INT_PTR CALLBACK main_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         SetDlgItemTextW(u, IDC_U_VERSION, t);
         CheckDlgButton(u, IDC_U_AUTO, S.cfg.auto_update ? BST_CHECKED : BST_UNCHECKED);
         ShowWindow(GetDlgItem(u, IDC_U_INSTALL), SW_HIDE);
+        SendDlgItemMessageW(S.page[PG_OCR], IDC_O_BAR, PBM_SETRANGE, 0, MAKELPARAM(0, 100));
+        ocr_show();
         show_hotkeys();
         daemon_cmd(L"_hkstate", NULL);
         SendMessageW(S.tabs, TCM_SETCURSEL, (WPARAM)S.start_page, 0);
         select_page(S.start_page);
         if (S.start_page == PG_UPDATE)
             upd_check();
+        if (S.start_page == PG_OCR && S.ocr_auto)
+            ocr_install();
+        S.ocr_auto = false;
         SetForegroundWindow(h);
         if (S.reopen) { /* back where it was, on the control that was used */
             S.reopen = false;
@@ -994,7 +1082,22 @@ static INT_PTR CALLBACK main_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
             select_page((int)wp);
             if ((int)wp == PG_UPDATE)
                 upd_check();
+            if ((int)wp == PG_OCR) {
+                ocr_show(); /* it may have been installed or removed meanwhile */
+                if (lp && !S.ocr_busy)
+                    ocr_install();
+            }
         }
+        return TRUE;
+    case WM_APP_OCR_PROGRESS: {
+        WCHAR t[48];
+        wsprintfW(t, T(U_DOWNLOAD_PCT), (int)wp);
+        SetDlgItemTextW(S.page[PG_OCR], IDC_O_STATUS, t);
+        SendDlgItemMessageW(S.page[PG_OCR], IDC_O_BAR, PBM_SETPOS, wp, 0);
+        return TRUE;
+    }
+    case WM_APP_OCR_DONE:
+        ocr_done((int)wp);
         return TRUE;
     case WM_COMMAND:
         if (LOWORD(wp) == IDCANCEL && !S.installing) /* not while the installer is swapping files */
@@ -1014,7 +1117,8 @@ static void helper_init(HINSTANCE inst)
     HMODULE cc = LoadLibraryW(L"comctl32.dll"), sh = LoadLibraryW(L"shell32.dll"), ux = LoadLibraryW(L"uxtheme.dll");
     PFN_InitCommonControlsEx icc = cc ? (PFN_InitCommonControlsEx)(void *)GetProcAddress(cc, "InitCommonControlsEx") : NULL;
     if (icc) {
-        INITCOMMONCONTROLSEX ic = {sizeof ic, ICC_TAB_CLASSES | ICC_LISTVIEW_CLASSES | ICC_STANDARD_CLASSES};
+        INITCOMMONCONTROLSEX ic = {sizeof ic,
+                                   ICC_TAB_CLASSES | ICC_LISTVIEW_CLASSES | ICC_STANDARD_CLASSES | ICC_PROGRESS_CLASS};
         icc(&ic);
     }
     if (sh) {
@@ -1038,11 +1142,12 @@ static void helper_init(HINSTANCE inst)
 
 int settings_main(HINSTANCE inst, const WCHAR *page)
 {
-    S.start_page = page && arg_eq(page, L"update") ? PG_UPDATE : PG_GENERAL;
+    S.ocr_auto = page && arg_eq(page, L"ocr-install"); /* from the installer: download the module at once */
+    S.start_page = !page ? PG_GENERAL : arg_eq(page, L"update") ? PG_UPDATE : arg_eq(page, L"ocr") || S.ocr_auto ? PG_OCR : PG_GENERAL;
     HWND open = ipc_find_dialog(SETTINGS_MARK);
     if (open) {
         if (S.start_page != PG_GENERAL)
-            PostMessageW(open, WM_APP_SHOW_PAGE, (WPARAM)S.start_page, 0);
+            PostMessageW(open, WM_APP_SHOW_PAGE, (WPARAM)S.start_page, S.ocr_auto);
         ShowWindow(open, SW_RESTORE);
         SetForegroundWindow(open);
         return 0;

@@ -64,6 +64,8 @@
 #define K_1 0x31                        /* = '1' */
 #define K_A 0x41                        /* = 'A' */
 #define K_C 0x43                        /* = 'C' */
+#define K_L 0x4C                        /* = 'L' */
+#define K_O 0x4F                        /* = 'O' */
 #define K_S 0x53                        /* = 'S' */
 #define K_T 0x54                        /* = 'T' */
 #define K_V 0x56                        /* = 'V' */
@@ -233,6 +235,12 @@ FUNC on_mouse_move
         mov dword ptr [rip + O + OV_HOVER], eax
         mov dword ptr [rip + O + OV_TIP], 0
         mov esi, eax
+        cmp eax, B_OCR                  /* about to be asked for the text: have the helper ready by the click */
+        jb 1f
+        cmp eax, B_OCRCOPY
+        ja 1f
+        call ocr_warm
+1:
         mov rcx, qword ptr [rip + O + OV_HWND]
         mov edx, TIMER_TIP
         API KillTimer
@@ -969,11 +977,20 @@ FUNC on_key
         test edi, edi                   /* the rest are Ctrl shortcuts, except C while choosing */
         jz .Lky_plain
         cmp ebx, K_C
-        je .Lky_copy
+        jne .Lky_notc
+        test r12d, r12d                 /* Ctrl+Shift+C: the text, not the picture */
+        jz .Lky_copy
+        mov ecx, ACT_OCR
+        jmp .Lky_finish
+.Lky_notc:
         cmp ebx, K_S
         je .Lky_save
         cmp ebx, K_T
         je .Lky_pin
+        cmp ebx, K_O
+        je .Lky_ocr
+        cmp ebx, K_L
+        je .Lky_long
         cmp ebx, K_Z
         je .Lky_undo
         cmp ebx, K_Y
@@ -1029,6 +1046,12 @@ FUNC on_key
 .Lky_pin:
         mov ecx, ACT_PIN
         jmp .Lky_finish
+.Lky_long:
+        mov ecx, ACT_LONG
+        jmp .Lky_finish
+.Lky_ocr:
+        call ocr_panel                  /* the text panel, shown or hidden */
+        jmp .Lky_refresh
 .Lky_copy:
         mov ecx, ACT_COPY
 .Lky_finish:

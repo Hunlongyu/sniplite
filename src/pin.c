@@ -3,6 +3,7 @@
 #include "pin.h"
 #include "image.h"
 #include "lang.h"
+#include "ocr.h"
 #include <dwmapi.h>
 #include <math.h>
 #include <windowsx.h>
@@ -12,7 +13,7 @@
 #endif
 
 #define TIMER_LABEL 1
-enum { CM_COPY = 1, CM_SAVE, CM_RESET, CM_CLOSE, CM_CLOSE_ALL };
+enum { CM_COPY = 1, CM_SAVE, CM_OCR, CM_RESET, CM_CLOSE, CM_CLOSE_ALL };
 
 typedef struct Pin {
     HWND hwnd;
@@ -107,6 +108,7 @@ static void pin_menu(Pin *p, POINT at)
     HMENU m = CreatePopupMenu();
     AppendMenuW(m, MF_STRING, CM_COPY, T(PM_COPY));
     AppendMenuW(m, MF_STRING, CM_SAVE, T(PM_SAVE));
+    AppendMenuW(m, MF_STRING, CM_OCR, T(PM_OCR));
     AppendMenuW(m, MF_STRING | (p->zoom == 1.f && p->alpha == 100 ? MF_GRAYED : 0), CM_RESET, T(PM_RESET));
     AppendMenuW(m, MF_SEPARATOR, 0, NULL);
     AppendMenuW(m, MF_STRING, CM_CLOSE, T(PM_CLOSE));
@@ -121,6 +123,12 @@ static void pin_menu(Pin *p, POINT at)
     switch (cmd) {
     case CM_COPY: pin_copy(p); break;
     case CM_SAVE: pin_save(p); break;
+    case CM_OCR: { /* the text of the picture as it was pinned, to the clipboard */
+        RECT wr;
+        GetWindowRect(h, &wr);
+        ocr_picture(p->img.px, p->img.w, p->img.h, wr, NULL);
+        break;
+    }
     case CM_RESET: {
         RECT wr;
         GetWindowRect(h, &wr);

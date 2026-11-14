@@ -30,6 +30,13 @@ void update_check(UpdateResult *r);
  * repeatedly with 0..100, or with -1 when the size is unknown. Blocking. */
 bool update_download(const WCHAR *tag, WCHAR *path, int cap, void (*progress)(int, void *), void *ctx);
 
+/* GET https://host/path, following redirects; the body goes to sink piece by piece
+ * (false from it ends the transfer). headers: more request headers, each ending in
+ * CR LF, or NULL. *status is set before the first piece: 200, or 206 for a range.
+ * True when the whole body went through. Blocking. */
+bool http_fetch(const WCHAR *host, const WCHAR *path, const WCHAR *headers, DWORD *status,
+                bool (*sink)(const void *data, DWORD n, void *ctx), void *ctx);
+
 /* Is this program running from the folder the installer uses? Only that copy can
  * be updated in place; a copy elsewhere (e.g. built from source) is left alone. */
 bool update_installed_copy(void);

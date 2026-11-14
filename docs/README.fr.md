@@ -15,15 +15,21 @@
 <img src="../pics/demo-edit.png" alt="Sélectionnez une zone et dessinez-y directement des cercles, des flèches, du texte et des numéros" width="66%">
 <br>
 <img src="../pics/demo-select.png" alt="Avant la capture, la fenêtre ou le contrôle sous la souris est repéré pour vous ; la loupe montre les pixels et les couleurs" width="32.5%"> <img src="../pics/demo-pin.png" alt="Épinglez une capture ou du texte à l'écran ; la molette zoome" width="32.5%">
+<br>
+<img src="../pics/demo-ocr.png" alt="Lire le texte de la sélection ; un tableau garde ses colonnes" width="66%">
+<br>
+<img src="../pics/demo-long.png" alt="Faites défiler une page : elle devient une seule longue capture" width="66%">
 
 </div>
 
 ## Points forts
 
 - **Rapide** : appuyez sur F1 et la capture est là, plus vite qu'avec 99 % des outils de capture
-- **Léger** : environ 220 Ko, rien d'autre à installer ; le cœur de la capture et du dessin est écrit en assembleur
+- **Léger** : environ 280 Ko, rien d'autre à installer ; le cœur de la capture et du dessin est écrit en assembleur
 - **Épingles** : épinglez une capture au-dessus de toutes les fenêtres pour la garder sous les yeux pendant que vous travaillez
 - **Complet** : captures, épingles, flèches, texte, mosaïque : tout y est
+- **Reconnaissance de texte** : lit le texte d'une capture, tableaux compris ; un module facultatif qui fonctionne entièrement sur votre ordinateur
+- **Captures défilantes** : faites défiler une page, elle est assemblée au fur et à mesure
 - **Propre** : sans publicité, open source, sans journaux, sans collecte de données
 - **Multilingue** : 8 langues ; suit celle de Windows, sauf si vous en choisissez une
 
@@ -44,6 +50,9 @@ Récupérez le dernier installeur dans [Releases](https://github.com/MrTangLuyao
 | **Enter** | Copier la capture |
 | **Ctrl+S** | Enregistrer la capture |
 | **Ctrl+T** | Épingler la capture à l'écran |
+| **Ctrl+O** | Reconnaître le texte de la sélection |
+| **Ctrl+Shift+C** | Copier le texte de la sélection |
+| **Ctrl+L** | Capture défilante : faites défiler, elle s'assemble |
 | **Esc** | Annuler la capture |
 | **Molette** | Pendant la capture : choisir une fenêtre plus grande ou plus petite ; sur une épingle : zoomer |
 | **Double-clic** | Fermer une épingle |
@@ -62,7 +71,7 @@ Les parties qui doivent aller vite (capture, composition, dessin et écran de ca
 
 | Outil | Téléchargement | Mémoire au repos | Délai après le raccourci |
 | --- | --- | --- | --- |
-| **sniplite** | 0,3 Mo | 11 Mo | 12 ms |
+| **sniplite** | 0,4 Mo | 11 Mo | 12 ms |
 | Snipaste 2.11.3 | 19 Mo | 50 Mo | 121 ms |
 | PixPin 3.6.6 | 66 Mo | 31 Mo | 142 ms |
 | Greenshot 1.3.328 | 4 Mo | 16 Mo | 252 ms |
@@ -70,6 +79,14 @@ Les parties qui doivent aller vite (capture, composition, dessin et écran de ca
 | ShareX 22.4.0 | 139 Mo | 58 Mo | non mesuré |
 
 <sub>Test informel, à titre indicatif seulement.</sub>
+
+**Comment récupérer le texte d'une capture ?**
+
+Sélectionnez une zone et cliquez sur le bouton de texte (Ctrl+O) : le texte apparaît dans un panneau à côté de la sélection, où vous pouvez le sélectionner, le modifier et le copier. Un tableau garde ses colonnes et se colle dans un tableur cellule par cellule, ou en Markdown si vous préférez. Ctrl+Shift+C copie le texte directement. La première fois, sniplite ouvre les préférences pour télécharger le module de reconnaissance de texte (12 Mo) : les modèles PaddleOCR PP-OCRv6 avec ONNX Runtime, entièrement sur votre ordinateur.
+
+**Comment faire une capture défilante ?**
+
+Sélectionnez la zone, cliquez sur le bouton de capture défilante (Ctrl+L) et faites défiler la page vous-même. sniplite assemble ce qui défile, et une bande à côté de la zone montre le résultat. Enter copie et Esc annule ; vous pouvez aussi enregistrer, épingler ou lire le texte.
 
 **Combien de mémoire utilise-t-il ?**
 
@@ -97,7 +114,7 @@ Oui. Lancez `sniplite help` pour la découvrir.
 
 ## Préférences
 
-<img src="../pics/ui/fr.png" alt="Les cinq onglets des préférences, la liste des raccourcis et l'installeur">
+<img src="../pics/ui/fr.png" alt="Les six onglets des préférences, la liste des raccourcis et l'installeur">
 
 ## Le compiler soi-même
 

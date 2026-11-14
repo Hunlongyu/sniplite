@@ -48,11 +48,18 @@
 #define B_SAVE                       23
 #define B_CLOSE                      24
 #define B_OK                         25
+#define B_OCR                        26
+#define B_OCRCOPY                    27
+#define B_LONG                       28
+#define B_LAST                       B_LONG /* the commands are B_UNDO .. B_LAST */
+#define TB_ITEMS                     20    /* entries of kTbOrder, separators included */
 #define B_SIZE                       40
 #define B_COLOR                      50
 #define ACT_COPY                     0
 #define ACT_SAVE                     1
 #define ACT_PIN                      2
+#define ACT_OCR                      3
+#define ACT_LONG                     4
 #define SHOT_MAX_TILES               16
 
 /* Tile */

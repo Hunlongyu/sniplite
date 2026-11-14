@@ -325,9 +325,9 @@ SFUNC scale_tab
         shr eax, 31
         add ecx, eax
         inc edx
-        cmp edx, 17
+        cmp edx, TB_ITEMS
         jb 1b
-        mov edx, 17
+        mov edx, TB_ITEMS
         sub edx, ecx                            /* buttons */
         imul edx, dword ptr [rip + .Ls30]
         imul ecx, dword ptr [rip + .Ls9]
@@ -887,7 +887,7 @@ SFUNC tip_text
         mov rax, qword ptr [rcx + rax*8 + 8 * S_TIP_TOOL1]
         ret
 1:      lea eax, [rcx - B_UNDO]
-        cmp eax, B_OK - B_UNDO
+        cmp eax, B_LAST - B_UNDO
         ja 2f
         mov rcx, qword ptr [rip + g_tr]
         mov rax, qword ptr [rcx + rax*8 + 8 * S_TIP_UNDO]
@@ -1001,7 +1001,7 @@ FUNC tb_items
         mov dword ptr [rsi + ITEM_RC + RC_B], r12d
         add rsi, ITEM_BYTES
 2:      inc ecx
-        cmp ecx, 17
+        cmp ecx, TB_ITEMS
         jb .Lti_order
         mov r8d, dword ptr [rbx + VIS_PB + RC_L]
         mov r9d, dword ptr [rbx + VIS_PB + RC_T]
@@ -1902,6 +1902,10 @@ FUNC refresh
         ENDPROLOG
         cmp byte ptr Ov(OV_ACTIVE), 0
         je .Lrf_ret
+        cmp byte ptr [rip + ocr_panel_on], 0    /* the text panel shows: it follows the selection */
+        je .Lrf_nopanel
+        call ocr_follow
+.Lrf_nopanel:
         cmp byte ptr Ov(OV_DC), 0
         je 0f
         call refresh_dc
@@ -4365,7 +4369,7 @@ FUNC draw_toolbar
         jmp 8f
 7:      add edi, r14d
 8:      inc ebp
-        cmp ebp, 17
+        cmp ebp, TB_ITEMS
         jb 5b
         call prop_tool_
         mov dword ptr [rsp + DT_PT], eax
@@ -4486,7 +4490,7 @@ FUNC draw_toolbar
         lea edx, [rcx + DIC_RECT]                /* a tool */
         jmp 8f
 7:      lea ecx, [rbp - B_UNDO]
-        cmp ecx, B_OK - B_UNDO
+        cmp ecx, B_LAST - B_UNDO
         ja 9f
         cmp ebp, B_OK                           /* a command */
         jne 10f
