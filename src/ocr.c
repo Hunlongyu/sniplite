@@ -190,6 +190,8 @@ bool ocr_load(const WCHAR *dir, int threads)
         return true;
     WCHAR own[MAX_PATH * 2], path[MAX_PATH * 2];
     if (!dir) {
+        if (!ocr_installed() && ocr_packed())
+            ocr_unpack(); /* the first time: out of the program's own file, beside it */
         ocr_dir(own, COUNTOF(own));
         dir = own;
     }

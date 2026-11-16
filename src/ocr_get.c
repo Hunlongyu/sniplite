@@ -98,8 +98,11 @@ typedef struct {
     size_t outlen, outpos;
 } Inf;
 
+#define FAST 10 /* codes up to this long are read with one look into a table */
+
 typedef struct {
     uint16_t count[16], symbol[288];
+    uint16_t fast[1 << FAST]; /* by the next FAST bits: symbol << 4 | the code's length; 0 for a longer code */
 } Huff;
 
 static uint32_t take(Inf *s, int n)
@@ -127,11 +130,41 @@ static void huff_build(Huff *h, const uint8_t *len, int n)
     for (int i = 0; i < n; i++)
         if (len[i])
             h->symbol[offs[len[i]]++] = (uint16_t)i;
+    /* the table: every short code, written as its bits arrive (last bit first), with all that can follow it */
+    uint16_t next[16];
+    unsigned code = 0;
+    for (int l = 1; l <= 15; l++) {
+        code = (code + h->count[l - 1]) << 1;
+        next[l] = (uint16_t)code;
+    }
+    memset(h->fast, 0, sizeof h->fast);
+    for (int i = 0; i < n; i++) {
+        int l = len[i];
+        if (!l)
+            continue;
+        unsigned c = next[l]++, r = 0;
+        if (l > FAST)
+            continue;
+        for (int b = 0; b < l; b++)
+            r |= (c >> b & 1) << (l - 1 - b);
+        for (unsigned j = r; j < 1u << FAST; j += 1u << l)
+            h->fast[j] = (uint16_t)(i << 4 | l);
+    }
 }
 
 static int huff_read(Inf *s, const Huff *h)
 {
-    int code = 0, first = 0, index = 0;
+    while (s->nbits < 15 && s->inpos < s->inlen) {
+        s->bits |= (uint64_t)s->in[s->inpos++] << s->nbits;
+        s->nbits += 8;
+    }
+    unsigned e = h->fast[s->bits & ((1u << FAST) - 1)];
+    if (e) {
+        s->bits >>= e & 15;
+        s->nbits -= (int)(e & 15);
+        return (int)(e >> 4);
+    }
+    int code = 0, first = 0, index = 0; /* a longer code: bit by bit */
     for (int len = 1; len <= 15; len++) {
         code |= (int)take(s, 1);
         int count = h->count[len];
@@ -188,7 +221,9 @@ static bool inflate(const uint8_t *in, size_t inlen, uint8_t *out, size_t outlen
         last = take(&s, 1);
         uint32_t type = take(&s, 2);
         uint8_t len[320];
-        if (type == 0) { /* stored */
+        if (type == 0) { /* stored: from the next whole byte, giving back the bytes read ahead */
+            if (s.nbits > 0)
+                s.inpos -= (size_t)(s.nbits / 8);
             s.bits = 0, s.nbits = 0;
             if (s.inpos + 4 > s.inlen)
                 ok = false;
@@ -365,6 +400,139 @@ int ocr_get(volatile LONG *cancel, void (*progress)(int percent, void *ctx), voi
         f.done += p->bytes;
     }
     return result;
+}
+
+/* ---- the module carried by the program itself ----
+ *
+ * sniplite_<version>_portable_with_OCR_x64.exe is sniplite.exe with a zip of the ocr folder
+ * put after it (pack.bat: copy /b), so the module travels in the one file. A zip is read from
+ * its end, where its directory is, and the directory says where each file begins, counted
+ * from the zip's own start: here that is the end of the program. The first time text is to be
+ * read, the folder is written beside the program, every file of the module checked against
+ * its SHA-256 as a downloaded one would be. A sniplite.exe without the zip is not slowed by
+ * any of this: the last 22 bytes of the file are looked at once. */
+
+static uint32_t rd32(const uint8_t *p) { return p[0] | p[1] << 8 | p[2] << 16 | (uint32_t)p[3] << 24; }
+static uint32_t rd16(const uint8_t *p) { return p[0] | p[1] << 8; }
+
+typedef struct {
+    HANDLE f;
+    uint64_t dir, shift; /* where the zip's directory is in the file; what to add to the places it names */
+    uint32_t dir_bytes, count;
+} Pack;
+
+static bool read_at(HANDLE f, uint64_t at, void *buf, uint32_t n)
+{
+    LARGE_INTEGER li;
+    DWORD got;
+    li.QuadPart = (LONGLONG)at;
+    return SetFilePointerEx(f, li, NULL, FILE_BEGIN) && ReadFile(f, buf, n, &got, NULL) && got == n;
+}
+
+static bool pack_open(Pack *k)
+{
+    WCHAR exe[MAX_PATH * 2];
+    LARGE_INTEGER size;
+    uint8_t end[22]; /* a zip's last record, when it has no comment */
+    k->f = GetModuleFileNameW(NULL, exe, COUNTOF(exe))
+               ? CreateFileW(exe, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, 0, NULL)
+               : INVALID_HANDLE_VALUE;
+    if (k->f == INVALID_HANDLE_VALUE)
+        return false;
+    if (GetFileSizeEx(k->f, &size) && size.QuadPart > 22 && read_at(k->f, (uint64_t)size.QuadPart - 22, end, 22) &&
+        rd32(end) == 0x06054b50) {
+        k->count = rd16(end + 10);
+        k->dir_bytes = rd32(end + 12);
+        k->dir = (uint64_t)size.QuadPart - 22 - k->dir_bytes;
+        k->shift = k->dir - rd32(end + 16);
+        if (k->dir_bytes < (uint64_t)size.QuadPart - 22 && rd32(end + 16) <= k->dir)
+            return true;
+    }
+    CloseHandle(k->f);
+    return false;
+}
+
+bool ocr_packed(void)
+{
+    static int known; /* 1 no, 2 yes: the program's file does not change while it runs */
+    if (!known) {
+        Pack k;
+        known = pack_open(&k) ? 2 : 1;
+        if (known == 2)
+            CloseHandle(k.f);
+    }
+    return known == 2;
+}
+
+/* one file of the zip, beside the program: checked if it is one of the module's, written, given its name */
+static bool pack_write(const WCHAR *name, const uint8_t *data, uint32_t n)
+{
+    WCHAR path[MAX_PATH * 2], tmp[MAX_PATH * 2];
+    uint8_t sha[32];
+    for (int i = 0; i < COUNTOF(kParts); i++)
+        if (!lstrcmpiW(name, kParts[i].name)) {
+            sha256(data, n, sha);
+            if (n != kParts[i].size || memcmp(sha, kParts[i].sha, 32))
+                return false;
+        }
+    if (!part_path(name, L"", path, COUNTOF(path)) || !part_path(name, L".part", tmp, COUNTOF(tmp)))
+        return false;
+    HANDLE h = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    DWORD wrote = 0;
+    bool ok = h != INVALID_HANDLE_VALUE && WriteFile(h, data, n, &wrote, NULL) && wrote == n;
+    if (h != INVALID_HANDLE_VALUE)
+        CloseHandle(h);
+    if (!ok || !MoveFileExW(tmp, path, MOVEFILE_REPLACE_EXISTING)) {
+        DeleteFileW(tmp);
+        return false;
+    }
+    return true;
+}
+
+bool ocr_unpack(void)
+{
+    Pack k;
+    WCHAR dir[MAX_PATH * 2];
+    if (!pack_open(&k))
+        return false;
+    ocr_dir(dir, COUNTOF(dir));
+    uint8_t *cd = mem_alloc(k.dir_bytes ? k.dir_bytes : 1);
+    bool ok = cd && read_at(k.f, k.dir, cd, k.dir_bytes) && (CreateDirectoryW(dir, NULL) || GetLastError() == ERROR_ALREADY_EXISTS);
+    const uint8_t *e = cd, *end = cd + k.dir_bytes;
+    for (uint32_t i = 0; ok && i < k.count; i++) {
+        if (e + 46 > end || rd32(e) != 0x02014b50) {
+            ok = false;
+            break;
+        }
+        uint32_t method = rd16(e + 10), csize = rd32(e + 20), usize = rd32(e + 24), nlen = rd16(e + 28), at = rd32(e + 42);
+        const char *name = (const char *)e + 46;
+        e += 46 + nlen + rd16(e + 30) + rd16(e + 32);
+        if (e > end) {
+            ok = false;
+            break;
+        }
+        /* only plain files right in "ocr/": nothing that could be written anywhere else */
+        WCHAR file[64];
+        bool plain = nlen > 4 && nlen < 4 + COUNTOF(file) && !memcmp(name, "ocr/", 4) && name[4] != '.';
+        for (uint32_t c = 4; plain && c < nlen; c++) {
+            char ch = name[c];
+            plain = ch > 32 && ch < 127 && ch != '/' && ch != '\\' && ch != ':';
+            file[c - 4] = (WCHAR)ch;
+        }
+        if (!plain)
+            continue; /* the folder's own entry, or something not expected here */
+        file[nlen - 4] = 0;
+        uint8_t head[30], *in = mem_alloc(csize ? csize : 1), *out = method ? mem_alloc(usize ? usize : 1) : in;
+        ok = in && out && read_at(k.f, k.shift + at, head, 30) && rd32(head) == 0x04034b50 &&
+             read_at(k.f, k.shift + at + 30 + rd16(head + 26) + rd16(head + 28), in, csize) &&
+             (method == 0 ? csize == usize : method == 8 && inflate(in, csize, out, usize)) && pack_write(file, out, usize);
+        if (out != in)
+            mem_free(out);
+        mem_free(in);
+    }
+    mem_free(cd);
+    CloseHandle(k.f);
+    return ok && ocr_installed();
 }
 
 bool ocr_remove(void)

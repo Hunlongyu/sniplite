@@ -37,6 +37,8 @@
 
 Récupérez le dernier installeur dans [Releases](https://github.com/MrTangLuyao/sniplite/releases/latest).
 
+Il existe aussi deux versions portables, sans installation : `sniplite_<version>_portable_x64.exe`, et `sniplite_<version>_portable_with_OCR_x64.exe`, qui contient le module de reconnaissance de texte.
+
 > [!TIP]
 > L'icône se trouve à droite de la barre des tâches ; si vous ne la voyez pas, cliquez sur la petite flèche. Pour la garder visible, cherchez « Autres icônes de la barre d'état système » dans les paramètres de Windows et activez sniplite.
 
@@ -47,9 +49,12 @@ Récupérez le dernier installeur dans [Releases](https://github.com/MrTangLuyao
 | **F1** | Capturer |
 | **F3** | Épingler à l'écran l'image ou le texte copié |
 | **Shift+F3** | Masquer / afficher toutes les épingles |
+| **F4** | Capturer et lire le texte (avec le module de reconnaissance de texte) |
+| **Shift+F4** | Capturer et copier le texte |
 | **Enter** | Copier la capture |
 | **Ctrl+S** | Enregistrer la capture |
 | **Ctrl+T** | Épingler la capture à l'écran |
+| **Clic du milieu** | Épingler la capture à l'écran |
 | **Ctrl+O** | Reconnaître le texte de la sélection |
 | **Ctrl+Shift+C** | Copier le texte de la sélection |
 | **Ctrl+L** | Capture défilante : faites défiler, elle s'assemble |
@@ -82,7 +87,7 @@ Les parties qui doivent aller vite (capture, composition, dessin et écran de ca
 
 **Comment récupérer le texte d'une capture ?**
 
-Sélectionnez une zone et cliquez sur le bouton de texte (Ctrl+O) : le texte apparaît dans un panneau à côté de la sélection, où vous pouvez le sélectionner, le modifier et le copier. Un tableau garde ses colonnes et se colle dans un tableur cellule par cellule, ou en Markdown si vous préférez. Ctrl+Shift+C copie le texte directement. La première fois, sniplite ouvre les préférences pour télécharger le module de reconnaissance de texte (12 Mo) : les modèles PaddleOCR PP-OCRv6 avec ONNX Runtime, entièrement sur votre ordinateur.
+Sélectionnez une zone et cliquez sur le bouton de texte (Ctrl+O) : le texte apparaît dans un panneau à côté de la sélection, où vous pouvez le sélectionner, le modifier et le copier. Un tableau garde ses colonnes et se colle dans un tableur cellule par cellule, ou en Markdown si vous préférez. Ctrl+Shift+C copie le texte directement. Il faut le module de reconnaissance de texte (12 Mo ; les modèles PaddleOCR PP-OCRv6 avec ONNX Runtime, entièrement sur votre ordinateur) : installez-le depuis l'onglet OCR des préférences, cochez-le dans l'installeur, ou prenez la version portable avec OCR. Tant qu'il n'est pas installé, les boutons de texte ne sont pas affichés. F4 et Shift+F4 lancent une capture qui lit ou copie le texte aussitôt.
 
 **Comment faire une capture défilante ?**
 

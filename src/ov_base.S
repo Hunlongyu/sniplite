@@ -51,6 +51,15 @@
 
 /* ---- data ----------------------------------------------------------------------------- */
 
+/* Which of the two orders the toolbar has, and how many entries that is. Set by
+ * ocr_refresh (ocr_ui.c) when the module comes or goes, never while capturing. */
+        .section .data$ov_base,"dw"
+        .balign 8
+        .globl tb_order
+tb_order:       .quad kTbOrder
+        .globl tb_count
+tb_count:       .long TB_ITEMS
+
         .section .bss$ov_base,"bw"
         .balign 32
         .globl O
@@ -91,6 +100,10 @@ O:      .space OV_BYTES
         .globl kTbOrder
 kTbOrder:       .long T_RECT, T_ELLIPSE, T_LINE, T_ARROW, T_PEN, T_MARKER, T_MOSAIC, T_TEXT, T_NUMBER
                 .long -1, B_UNDO, B_REDO, -1, B_LONG, B_OCR, B_OCRCOPY, B_PIN, B_SAVE, B_CLOSE, B_OK
+/* the same without the two text buttons: while the text recognition module is not installed */
+        .globl kTbPlain
+kTbPlain:       .long T_RECT, T_ELLIPSE, T_LINE, T_ARROW, T_PEN, T_MARKER, T_MOSAIC, T_TEXT, T_NUMBER
+                .long -1, B_UNDO, B_REDO, -1, B_LONG, B_PIN, B_SAVE, B_CLOSE, B_OK
         .globl kColors
 kColors:        .long 0xE53935, 0xFB8C00, 0xFDD835, 0x43A047, 0x1E88E5, 0x8E24AA, 0x000000, 0xFFFFFF
 /* tool_px indexes these five as one table: keep them together, in this order */

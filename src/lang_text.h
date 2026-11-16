@@ -15,6 +15,7 @@ X(HELP,
   "  sniplite capture --full --out a.png        整个屏幕存成文件\n"
   "  sniplite capture --rect 0,0,800,600        截这块区域到剪贴板\n"
   "  sniplite pin [图片]          贴到屏幕，不给图片就贴剪贴板\n"
+  "  sniplite ocr                 框选一块区域识别文字，加 --copy 直接复制\n"
   "  sniplite settings            打开首选项\n"
   "  sniplite update              检查更新，加 --install 直接装上新版本\n"
   "  sniplite status              看状态\n"
@@ -35,6 +36,7 @@ X(HELP,
   "  sniplite capture --full --out a.png        整個螢幕存成檔案\n"
   "  sniplite capture --rect 0,0,800,600        截這塊區域到剪貼簿\n"
   "  sniplite pin [圖片]          貼到螢幕，不給圖片就貼剪貼簿\n"
+  "  sniplite ocr                 框選一塊區域辨識文字，加 --copy 直接複製\n"
   "  sniplite settings            開啟偏好設定\n"
   "  sniplite update              檢查更新，加 --install 直接裝上新版本\n"
   "  sniplite status              看狀態\n"
@@ -55,6 +57,7 @@ X(HELP,
   "  sniplite capture --full --out a.png        save the whole screen to a file\n"
   "  sniplite capture --rect 0,0,800,600        copy that area to the clipboard\n"
   "  sniplite pin [image]         pin an image, or the clipboard without one\n"
+  "  sniplite ocr                 select an area and read its text; --copy copies it at once\n"
   "  sniplite settings            open Settings\n"
   "  sniplite update              check for updates; --install installs the new version\n"
   "  sniplite status              show the status\n"
@@ -75,6 +78,7 @@ X(HELP,
   "  sniplite capture --full --out a.png        画面全体をファイルに保存\n"
   "  sniplite capture --rect 0,0,800,600        この範囲をクリップボードにコピー\n"
   "  sniplite pin [画像]          画像をピン留め（省略時はクリップボード）\n"
+  "  sniplite ocr                 範囲を選んで文字を読み取る。--copy でそのままコピー\n"
   "  sniplite settings            設定を開く\n"
   "  sniplite update              更新を確認（--install で新バージョンをインストール）\n"
   "  sniplite status              状態を表示\n"
@@ -95,6 +99,7 @@ X(HELP,
   "  sniplite capture --full --out a.png        전체 화면을 파일로 저장\n"
   "  sniplite capture --rect 0,0,800,600        이 영역을 클립보드에 복사\n"
   "  sniplite pin [이미지]        화면에 고정 (이미지가 없으면 클립보드)\n"
+  "  sniplite ocr                 영역을 선택해 텍스트 인식, --copy 는 바로 복사\n"
   "  sniplite settings            설정 열기\n"
   "  sniplite update              업데이트 확인 (--install로 새 버전 설치)\n"
   "  sniplite status              상태 표시\n"
@@ -115,6 +120,7 @@ X(HELP,
   "  sniplite capture --full --out a.png        enregistrer tout l'écran dans un fichier\n"
   "  sniplite capture --rect 0,0,800,600        copier cette zone dans le presse-papiers\n"
   "  sniplite pin [image]         épingler une image, sinon le presse-papiers\n"
+  "  sniplite ocr                 sélectionner une zone et lire son texte ; --copy le copie aussitôt\n"
   "  sniplite settings            ouvrir les préférences\n"
   "  sniplite update              chercher une mise à jour ; --install l'installe\n"
   "  sniplite status              afficher l'état\n"
@@ -135,6 +141,7 @@ X(HELP,
   "  sniplite capture --full --out a.png        ganzen Bildschirm in eine Datei speichern\n"
   "  sniplite capture --rect 0,0,800,600        diesen Bereich in die Zwischenablage kopieren\n"
   "  sniplite pin [Bild]          Bild anheften, ohne Bild die Zwischenablage\n"
+  "  sniplite ocr                 Bereich wählen und Text erkennen; --copy kopiert ihn sofort\n"
   "  sniplite settings            Einstellungen öffnen\n"
   "  sniplite update              nach Updates suchen; --install installiert die neue Version\n"
   "  sniplite status              Status anzeigen\n"
@@ -155,6 +162,7 @@ X(HELP,
   "  sniplite capture --full --out a.png        guardar toda la pantalla en un archivo\n"
   "  sniplite capture --rect 0,0,800,600        copiar esa zona al portapapeles\n"
   "  sniplite pin [imagen]        fijar una imagen o, sin ella, el portapapeles\n"
+  "  sniplite ocr                 seleccionar una zona y leer su texto; --copy lo copia al momento\n"
   "  sniplite settings            abrir los ajustes\n"
   "  sniplite update              buscar actualizaciones; --install instala la nueva versión\n"
   "  sniplite status              ver el estado\n"
@@ -325,7 +333,7 @@ X(ERR_GDI_DXGI,
   "--gdi 和 --dxgi 只能选一个\n", "--gdi 和 --dxgi 只能選一個\n", "Use --gdi or --dxgi, not both\n",
   "--gdi と --dxgi は同時に使えません\n", "--gdi와 --dxgi는 함께 쓸 수 없습니다\n",
   "--gdi ou --dxgi, pas les deux\n", "Nur --gdi oder --dxgi, nicht beides\n", "Usa --gdi o --dxgi, no ambos\n")
-/* status: the three hotkey labels in the order of HK_*, at most 15 columns wide */
+/* status: the hotkey labels in the order of HK_*, at most 15 columns wide */
 X(ST_HK_CAPTURE,
   "截图热键", "截圖快速鍵", "Capture key", "キャプチャキー", "캡처 단축키", "Touche capture", "Aufnahmetaste",
   "Atajo capturar")
@@ -335,6 +343,9 @@ X(ST_HK_PIN,
 X(ST_HK_TOGGLE,
   "显示/隐藏贴图", "隱藏/顯示貼圖", "Show/hide pins", "ピン表示切替", "고정 표시/숨김", "Voir/masquer",
   "Pins ein/aus", "Ver/ocultar")
+X(ST_HK_OCR, "识别文字热键", "辨識文字快速鍵", "Read text key", "文字認識キー", "인식 단축키", "Touche texte", "Texttaste", "Atajo texto")
+X(ST_HK_OCRCOPY, "复制文字热键", "複製文字快速鍵", "Copy text key", "文字コピーキー", "복사 단축키", "Touche copie", "Kopiertaste",
+  "Atajo copiar")
 X(ST_RUNNING,
   "sniplite %s 正在后台运行（PID %lu）\n", "sniplite %s 正在背景執行（PID %lu）\n",
   "sniplite %s is running (PID %lu)\n", "sniplite %s 実行中（PID %lu）\n", "sniplite %s 실행 중 (PID %lu)\n",
@@ -531,6 +542,9 @@ X(G_AUTOSTART,
 X(G_TRAY,
   "显示托盘图标", "顯示系統匣圖示", "Show the tray icon", "トレイアイコンを表示", "트레이 아이콘 표시",
   "Icône dans la zone de notification", "Tray-Symbol anzeigen", "Mostrar el icono de la bandeja")
+X(G_PIN_TOP,
+  "贴图置顶", "貼圖置頂", "Keep pins on top", "ピンを常に手前に表示", "고정 이미지를 항상 위에",
+  "Épingles toujours au premier plan", "Pins immer im Vordergrund", "Imágenes fijadas siempre visibles")
 X(G_LANG, "语言:", "語言:", "Language:", "言語:", "언어:", "Langue :", "Sprache:", "Idioma:")
 X(G_LANG_AUTO, "自动（%s）", "自動（%s）", "Auto (%s)", "自動（%s）", "자동 (%s)", "Auto (%s)", "Automatisch (%s)",
   "Automático (%s)")
@@ -569,6 +583,9 @@ X(H_PIN, "贴图:", "貼圖:", "Pin:", "ピン留め:", "고정:", "Épingler :"
 X(H_TOGGLE,
   "隐藏/显示所有贴图:", "隱藏/顯示所有貼圖:", "Hide/show pins:", "ピン表示切替:", "고정 표시/숨김:",
   "Masquer/afficher :", "Pins ein/aus:", "Ocultar/mostrar:")
+X(H_OCR, "识别文字:", "辨識文字:", "Read text:", "文字認識:", "텍스트 인식:", "Lire le texte :", "Text erkennen:", "Leer texto:")
+X(H_OCRCOPY, "复制文字:", "複製文字:", "Copy text:", "文字コピー:", "텍스트 복사:", "Copier le texte :", "Text kopieren:",
+  "Copiar texto:")
 X(H_HINT,
   "单击输入框后按下新的快捷键，Backspace 清除。", "點一下輸入框後按下新的快速鍵，Backspace 清除。",
   "Click a field, then press the new keys. Backspace clears it.",
@@ -840,6 +857,10 @@ X(PM_CLOSE, "关闭\tEsc", "關閉\tEsc", "Close\tEsc", "閉じる\tEsc", "닫�
   "Cerrar\tEsc")
 X(PM_OCR, "复制文字", "複製文字", "Copy text", "テキストをコピー", "텍스트 복사", "Copier le texte", "Text kopieren",
   "Copiar texto")
+X(PM_TOP_ALL, "置顶所有贴图", "置頂所有貼圖", "All pins on top", "すべてのピンを手前に表示", "모든 고정 이미지를 위에",
+  "Toutes les épingles au premier plan", "Alle Pins im Vordergrund", "Todas las imágenes siempre visibles")
+X(PM_TOP, "置顶这个贴图", "置頂這張貼圖", "This pin on top", "このピンを手前に表示", "이 고정 이미지를 위에",
+  "Cette épingle au premier plan", "Diesen Pin im Vordergrund", "Esta imagen siempre visible")
 
 /* ---- text recognition (ocr.c) ---- */
 X(OCR_WORKING, "正在识别...", "正在辨識...", "Reading the text...", "読み取り中...", "인식 중...",

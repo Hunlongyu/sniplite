@@ -249,6 +249,9 @@ static void bar_text(WCHAR *t, int cap, uint32_t *color)
     }
 }
 
+/* the first button the bar has: without the module, not the two for text */
+static int bar_first(void) { return ocr_there ? 0 : BT_PIN; }
+
 static RECT bar_button(int i)
 {
     int b = px(30), x = L.barimg.w - px(4) - (BT_COUNT - i) * b, y = (L.barimg.h - b) / 2;
@@ -263,7 +266,7 @@ static void bar_draw(void)
     Surf s = surf_img(&L.barimg, 0, 0);
     d_fill(&s, rc, 0xF7F7F7);
     d_frame(&s, rc, 1, 0xBDBDBD);
-    for (int i = 0; i < BT_COUNT; i++) {
+    for (int i = bar_first(); i < BT_COUNT; i++) {
         RECT b = bar_button(i);
         if (i == L.hover || (i == BT_OCR && L.reading))
             d_fill(&s, rect_inflate(b, -px(2)), i == L.down || i != L.hover ? 0xD0D0D0 : 0xE4E4E4);
@@ -277,7 +280,7 @@ static void bar_draw(void)
     HGDIOBJ old = SelectObject(L.barimg.dc, f);
     SetBkMode(L.barimg.dc, TRANSPARENT);
     SetTextColor(L.barimg.dc, RGB(color >> 16, color >> 8 & 255, color & 255));
-    RECT tr = {px(10), 0, bar_button(0).left - px(6), rc.bottom};
+    RECT tr = {px(10), 0, bar_button(bar_first()).left - px(6), rc.bottom};
     DrawTextW(L.barimg.dc, t, -1, &tr, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
     SelectObject(L.barimg.dc, old);
     DeleteObject(f);
@@ -447,7 +450,7 @@ static void tick(void)
 static int bar_hit(LPARAM lp)
 {
     POINT p = {(short)LOWORD(lp), (short)HIWORD(lp)};
-    for (int i = 0; i < BT_COUNT; i++) {
+    for (int i = bar_first(); i < BT_COUNT; i++) {
         RECT b = bar_button(i);
         if (PtInRect(&b, p))
             return i;
@@ -688,7 +691,7 @@ void long_begin(void)
             L.tw = 0;
     }
     /* the bar: below the region, else above it, else inside its bottom edge */
-    int bw = px(240) + BT_COUNT * px(30) + px(8), bh = px(34);
+    int bw = px(240) + (BT_COUNT - bar_first()) * px(30) + px(8), bh = px(34);
     int bx = CLAMPI(rc.right - bw, mon->left, MAXI(mon->left, mon->right - bw)), by = rc.bottom + gap;
     if (by + bh > mon->bottom)
         by = rc.top - gap - bh >= mon->top ? rc.top - gap - bh : rc.bottom - bh - px(6);

@@ -27,6 +27,10 @@ void ocr_dir(WCHAR *dir, int cap); /* the module's folder: "ocr" next to the pro
 enum { OCR_GET_OK, OCR_GET_NET, OCR_GET_CHECK, OCR_GET_WRITE, OCR_GET_CANCEL };
 int ocr_get(volatile LONG *cancel, void (*progress)(int percent, void *ctx), void *ctx);
 bool ocr_remove(void); /* false when a file is in use */
+/* The program may carry the module itself (the portable one with OCR). ocr_unpack writes
+ * it into that folder, checked the same way; ocr_load does this when the folder is missing. */
+bool ocr_packed(void);
+bool ocr_unpack(void);
 int ocr_size_mb(void);
 /* dir: the module's folder, NULL for the "ocr" folder next to the program.
  * threads: 0 lets the module choose. Loading again is free. */
@@ -38,7 +42,11 @@ bool ocr_run(const uint32_t *px, int stride, int w, int h, float screen, OcrOut 
 
 /* ocr_ui.c, the background program's side: what the user asks for. All of it is done
  * by a helper process (sniplite.exe --ocr) that also owns the windows. */
-extern uint8_t ocr_panel_on; /* the text panel shows: the capture's refresh calls ocr_follow */
+extern uint8_t ocr_panel_on; /* the text panel shows, or a text capture waits for its selection: refresh calls ocr_follow */
+extern uint8_t ocr_there;    /* the module is installed: the text buttons and menu entries show */
+void ocr_refresh(void);      /* look again whether it is (at start, after the preferences) */
+void ocr_capture(bool copy); /* a capture for its text, from a hotkey or the command line */
+void ocr_then(int mode);     /* WM_APP_OCR_THEN: its selection is made */
 void ocr_warm(void);   /* about to be asked: have the helper and the module ready */
 void ocr_panel(void);  /* the panel with the selection's text, beside it; again hides it */
 void ocr_follow(void); /* the selection may have changed: read it again */

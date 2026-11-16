@@ -35,19 +35,28 @@
 #define IDC_HK_LABEL1 137
 #define IDC_HK_LABEL2 138
 #define IDC_HK_LABEL3 139
-#define IDC_TAGLINE 143
-#define IDC_LICENSE 144
+#define IDC_PIN_TOP 145
+#define IDC_TAGLINE 146
+#define IDC_LICENSE 147
+#define IDC_HK_LABEL4 148
+#define IDC_HK_LABEL5 149
 
 /* explicit per-row ids (resource scripts cannot do arithmetic reliably) */
 #define IDC_HK_FIELD1 140
 #define IDC_HK_FIELD2 141
 #define IDC_HK_FIELD3 142
+#define IDC_HK_FIELD4 143
+#define IDC_HK_FIELD5 144
 #define IDC_HK_CLEAR1 150
 #define IDC_HK_CLEAR2 151
 #define IDC_HK_CLEAR3 152
+#define IDC_HK_CLEAR4 153
+#define IDC_HK_CLEAR5 154
 #define IDC_HK_STATE1 160
 #define IDC_HK_STATE2 161
 #define IDC_HK_STATE3 162
+#define IDC_HK_STATE4 163
+#define IDC_HK_STATE5 164
 
 #define IDD_SHORTCUTS 170
 #define IDC_LIST 171

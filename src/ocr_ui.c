@@ -56,14 +56,33 @@ void ov_cancel(void);
 #define OV_I32(f) (*(int32_t *)(O + (f)))
 #define OV_RC(f) ((RECT *)(O + (f)))
 
+void finish(int act);
+void refresh(void);
+bool ov_begin(void);
+bool ov_active(void);
+extern const int32_t kTbOrder[], kTbPlain[]; /* the toolbar with and without the text buttons (ov_base.S) */
+extern const int32_t *tb_order;
+extern int32_t tb_count;
+
 uint8_t ocr_panel_on; /* read by refresh(): call ocr_follow() */
+uint8_t ocr_there;
 
 static struct {
     SRWLOCK lock;
     HANDLE proc, pipe; /* the helper and the pipe to its standard input */
     RECT sent;         /* the selection the panel was last given */
     bool seen;         /* the panel has been on the screen */
+    int then;          /* a text capture waits for its selection: 1 show the text, 2 copy it */
 } H;
+
+/* Whether the module is installed decides what the toolbar offers. Looked up when it
+ * can have changed, never on the way to a capture. */
+void ocr_refresh(void)
+{
+    ocr_there = ocr_installed() || ocr_packed();
+    tb_order = ocr_there ? kTbOrder : kTbPlain;
+    tb_count = TB_ITEMS - (ocr_there ? 0 : 2);
+}
 
 static void helper_drop(void)
 {
@@ -110,7 +129,7 @@ static DWORD WINAPI warm_thread(void *arg)
 {
     (void)arg;
     AcquireSRWLockExclusive(&H.lock);
-    if (ocr_installed())
+    if (ocr_there)
         helper_start();
     ReleaseSRWLockExclusive(&H.lock);
     return 0;
@@ -195,6 +214,7 @@ void ocr_hide(void)
     if (!ocr_panel_on)
         return;
     ocr_panel_on = 0;
+    H.then = 0;
     job_send(OP_HIDE, NULL, NULL, NULL);
 }
 
@@ -210,6 +230,14 @@ static Pic selection(RECT *at)
 
 void ocr_follow(void)
 {
+    if (H.then) { /* a text capture: once the selection is made, from the message loop (this is inside a repaint) */
+        if (OV_I32(OV_PHASE) != PH_EDIT || OV_I32(OV_DRAG) != DR_NONE)
+            return;
+        PostMessageW(*(HWND *)(O + OV_DAEMON), WM_APP_OCR_THEN, (WPARAM)H.then, 0);
+        H.then = 0;
+        ocr_panel_on = 0;
+        return;
+    }
     if (OV_I32(OV_PHASE) != PH_EDIT) {
         ocr_hide(); /* back to choosing: there is no selection to read */
         return;
@@ -231,7 +259,8 @@ void ocr_follow(void)
 
 static bool module_there(void)
 {
-    if (ocr_installed())
+    ocr_refresh();
+    if (ocr_there)
         return true;
     settings_open(L"ocr"); /* where it can be downloaded */
     return false;
@@ -267,6 +296,37 @@ void ocr_copy(void)
     Pic pic = selection(&at);
     if (module_there())
         job_send(OP_COPY, &pic, &at, NULL);
+}
+
+void ocr_then(int mode)
+{
+    if (!ov_active() || OV_I32(OV_PHASE) != PH_EDIT)
+        return;
+    if (mode == 2) {
+        finish(ACT_OCR);
+    } else {
+        ocr_panel();
+        refresh();
+    }
+}
+
+/* The text hotkeys and `sniplite ocr`. While capturing they act on the selection
+ * there is; otherwise a capture begins that reads its selection as soon as it is made. */
+void ocr_capture(bool copy)
+{
+    if (ov_active()) {
+        ocr_then(copy ? 2 : 1);
+        return;
+    }
+    if (!module_there())
+        return;
+    H.then = copy ? 2 : 1;
+    ocr_panel_on = 1;
+    ocr_warm(); /* the module loads while the selection is being made */
+    if (!ov_begin()) {
+        H.then = 0;
+        ocr_panel_on = 0;
+    }
 }
 
 bool ocr_picture(const uint32_t *px, int w, int h, RECT beside, HWND owner)

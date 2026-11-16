@@ -37,6 +37,8 @@
 
 Descarga el instalador más reciente en [Releases](https://github.com/MrTangLuyao/sniplite/releases/latest).
 
+También hay dos versiones portables, sin instalación: `sniplite_<versión>_portable_x64.exe`, y `sniplite_<versión>_portable_with_OCR_x64.exe`, que incluye el módulo de reconocimiento de texto.
+
 > [!TIP]
 > El icono está en el extremo derecho de la barra de tareas; si no lo ves, haz clic en la flecha pequeña. Para tenerlo siempre a la vista, busca «Otros iconos de la bandeja del sistema» en la configuración de Windows y activa sniplite.
 
@@ -47,9 +49,12 @@ Descarga el instalador más reciente en [Releases](https://github.com/MrTangLuya
 | **F1** | Capturar |
 | **F3** | Fijar en pantalla la imagen o el texto copiado |
 | **Shift+F3** | Ocultar / mostrar todas las imágenes fijadas |
+| **F4** | Capturar y leer el texto (con el módulo de reconocimiento de texto) |
+| **Shift+F4** | Capturar y copiar el texto |
 | **Enter** | Copiar la captura |
 | **Ctrl+S** | Guardar la captura |
 | **Ctrl+T** | Fijar la captura en pantalla |
+| **Clic central** | Fijar la captura en pantalla |
 | **Ctrl+O** | Reconocer el texto de la selección |
 | **Ctrl+Shift+C** | Copiar el texto de la selección |
 | **Ctrl+L** | Captura con desplazamiento: desplaza y se une sola |
@@ -82,7 +87,7 @@ Las partes que deben ser rápidas (captura, composición, dibujo y la pantalla d
 
 **¿Cómo saco el texto de una captura?**
 
-Selecciona una zona y pulsa el botón de texto (Ctrl+O): el texto aparece en un panel junto a la selección, donde puedes seleccionarlo, editarlo y copiarlo. Una tabla conserva sus columnas y se pega en una hoja de cálculo celda por celda, o como Markdown si lo prefieres. Ctrl+Shift+C copia el texto directamente. La primera vez, sniplite abre los ajustes para descargar el módulo de reconocimiento de texto (12 MB): los modelos PaddleOCR PP-OCRv6 con ONNX Runtime, todo en tu equipo.
+Selecciona una zona y pulsa el botón de texto (Ctrl+O): el texto aparece en un panel junto a la selección, donde puedes seleccionarlo, editarlo y copiarlo. Una tabla conserva sus columnas y se pega en una hoja de cálculo celda por celda, o como Markdown si lo prefieres. Ctrl+Shift+C copia el texto directamente. Hace falta el módulo de reconocimiento de texto (12 MB; los modelos PaddleOCR PP-OCRv6 con ONNX Runtime, todo en tu equipo): instálalo en la pestaña OCR de los ajustes, márcalo en el instalador o usa la versión portable con OCR. Mientras no esté instalado, los botones de texto no se muestran. F4 y Shift+F4 inician una captura que lee o copia el texto al momento.
 
 **¿Cómo hago una captura larga?**
 

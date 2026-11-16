@@ -21,7 +21,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define SNIPLITE_VERSION L"1.3.0"
+#define SNIPLITE_VERSION L"1.3.1"
 
 #define DAEMON_CLASS L"sniplite.daemon"
 #define DAEMON_MUTEX L"Local\\sniplite.daemon"
@@ -44,6 +44,7 @@ enum {
 
 /* Private window messages of the daemon window. */
 #define WM_APP_GPU_READY (WM_APP + 1) /* lParam = GpuState* built on a worker thread */
+#define WM_APP_OCR_THEN (WM_APP + 4)  /* a capture started for its text has its selection: wParam = 1 show it, 2 copy it */
 
 #define MINI(a, b) ((a) < (b) ? (a) : (b))
 #define MAXI(a, b) ((a) > (b) ? (a) : (b))

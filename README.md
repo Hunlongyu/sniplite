@@ -37,6 +37,8 @@
 
 Get the latest installer from [Releases](https://github.com/MrTangLuyao/sniplite/releases/latest).
 
+There are two portable versions too, with nothing to install: `sniplite_<version>_portable_x64.exe`, and `sniplite_<version>_portable_with_OCR_x64.exe`, which carries the text recognition module.
+
 > [!TIP]
 > The icon is at the right end of the taskbar; click the small arrow there if you do not see it. To keep it in view, search Windows Settings for "Other system tray icons" and turn sniplite on.
 
@@ -47,9 +49,12 @@ Get the latest installer from [Releases](https://github.com/MrTangLuyao/sniplite
 | **F1** | Capture |
 | **F3** | Pin the copied image or text to the screen |
 | **Shift+F3** | Hide / show all pins |
+| **F4** | Capture and read the text (with the text recognition module) |
+| **Shift+F4** | Capture and copy the text |
 | **Enter** | Copy the capture |
 | **Ctrl+S** | Save the capture |
 | **Ctrl+T** | Pin the capture to the screen |
+| **Middle click** | Pin the capture to the screen |
 | **Ctrl+O** | Recognize the text of the selection |
 | **Ctrl+Shift+C** | Copy the text of the selection |
 | **Ctrl+L** | Long screenshot: scroll, and it is stitched |
@@ -82,7 +87,7 @@ The parts that have to be fast (capture, composition, drawing and the capture ov
 
 **How do I get the text out of a screenshot?**
 
-Select an area and click the text button (Ctrl+O): the text appears in a panel beside the selection, where you can select, edit and copy it. A table keeps its columns and pastes into a spreadsheet as cells, or as Markdown if you prefer. Ctrl+Shift+C copies the text straight away. The first time, sniplite opens Settings so you can download the text recognition module (12 MB): PaddleOCR PP-OCRv6 models running on ONNX Runtime, entirely on your computer.
+Select an area and click the text button (Ctrl+O): the text appears in a panel beside the selection, where you can select, edit and copy it. A table keeps its columns and pastes into a spreadsheet as cells, or as Markdown if you prefer. Ctrl+Shift+C copies the text straight away. It needs the text recognition module (12 MB; PaddleOCR PP-OCRv6 models on ONNX Runtime, running entirely on your computer): install it on the OCR page of Settings, tick it in the installer, or use the portable version with OCR. Until it is installed, the text buttons are not shown. F4 and Shift+F4 start a capture that reads or copies the text right away.
 
 **How do I take a long screenshot?**
 

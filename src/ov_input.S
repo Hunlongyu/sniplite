@@ -25,6 +25,7 @@
 #define W_WM_LBUTTONUP 0x0202
 #define W_WM_LBUTTONDBLCLK 0x0203
 #define W_WM_RBUTTONUP 0x0205
+#define W_WM_MBUTTONUP 0x0208
 #define W_WM_MOUSEWHEEL 0x020A
 #define W_WM_CAPTURECHANGED 0x0215
 #define W_WM_DPICHANGED 0x02E0
@@ -1184,6 +1185,7 @@ ENDF
 #define C_TIMER 12
 #define C_CAPTURE 13
 #define C_CANCEL 14
+#define C_MUP 15
 #define MSG_LIMIT 0x0216                /* the map's size: up to WM_CAPTURECHANGED; WM_DPICHANGED is above */
         .if MSG_LIMIT != W_WM_CAPTURECHANGED + 1
         .error "message map size"
@@ -1219,6 +1221,8 @@ ENDF
         .byte C_DBLCLK
         .org .Lp_map + W_WM_RBUTTONUP
         .byte C_RUP
+        .org .Lp_map + W_WM_MBUTTONUP
+        .byte C_MUP
         .org .Lp_map + W_WM_MOUSEWHEEL
         .byte C_WHEEL
         .org .Lp_map + W_WM_CAPTURECHANGED
@@ -1290,6 +1294,9 @@ FUNC ov_proc
 .Lp_rup:
         call on_rbutton_up
         jmp .Lp_zero
+.Lp_mup:                                /* the middle button pins, like Ctrl+T: no reach for the keyboard */
+        call ov_pin_hotkey
+        jmp .Lp_zero
 .Lp_wheel:
         mov ecx, r8d                    /* GET_WHEEL_DELTA_WPARAM */
         sar ecx, 16
@@ -1358,6 +1365,7 @@ ENDF
         .long .Lp_timer - .Lp_jt
         .long .Lp_capture - .Lp_jt
         .long .Lp_cancel - .Lp_jt
+        .long .Lp_mup - .Lp_jt
 
 /* ---- start-up ---------------------------------------------------------------------------- */
 

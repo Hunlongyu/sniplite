@@ -37,6 +37,8 @@
 
 Den neuesten Installer gibt es unter [Releases](https://github.com/MrTangLuyao/sniplite/releases/latest).
 
+Dazu gibt es zwei portable Versionen ohne Installation: `sniplite_<Version>_portable_x64.exe` und `sniplite_<Version>_portable_with_OCR_x64.exe`, die das Texterkennungsmodul mitbringt.
+
 > [!TIP]
 > Das Symbol sitzt am rechten Ende der Taskleiste; ist es nicht zu sehen, klicken Sie dort auf den kleinen Pfeil. Damit es sichtbar bleibt, suchen Sie in den Windows-Einstellungen nach „Weitere Taskleistensymbole“ und schalten sniplite ein.
 
@@ -47,9 +49,12 @@ Den neuesten Installer gibt es unter [Releases](https://github.com/MrTangLuyao/s
 | **F1** | Aufnehmen |
 | **F3** | Kopiertes Bild oder kopierten Text anheften |
 | **Shift+F3** | Alle Pins aus- / einblenden |
+| **F4** | Aufnehmen und Text erkennen (mit dem Texterkennungsmodul) |
+| **Shift+F4** | Aufnehmen und Text kopieren |
 | **Enter** | Aufnahme kopieren |
 | **Ctrl+S** | Aufnahme speichern |
 | **Ctrl+T** | Aufnahme anheften |
+| **Mittelklick** | Aufnahme anheften |
 | **Ctrl+O** | Text der Auswahl erkennen |
 | **Ctrl+Shift+C** | Text der Auswahl kopieren |
 | **Ctrl+L** | Scrollaufnahme: scrollen, sie wird zusammengesetzt |
@@ -82,7 +87,7 @@ Die Teile, die schnell sein müssen (Aufnahme, Komposition, Zeichnen und Aufnahm
 
 **Wie bekomme ich den Text aus einem Screenshot?**
 
-Einen Bereich auswählen und auf die Text-Schaltfläche klicken (Ctrl+O): Der Text erscheint in einem Feld neben der Auswahl und lässt sich markieren, bearbeiten und kopieren. Eine Tabelle behält ihre Spalten und landet in einer Tabellenkalkulation Zelle für Zelle, auf Wunsch auch als Markdown. Ctrl+Shift+C kopiert den Text sofort. Beim ersten Mal öffnet sniplite die Einstellungen, dort lässt sich das Texterkennungsmodul laden (12 MB): PaddleOCR-Modelle PP-OCRv6 mit ONNX Runtime, vollständig auf dem eigenen Computer.
+Einen Bereich auswählen und auf die Text-Schaltfläche klicken (Ctrl+O): Der Text erscheint in einem Feld neben der Auswahl und lässt sich markieren, bearbeiten und kopieren. Eine Tabelle behält ihre Spalten und landet in einer Tabellenkalkulation Zelle für Zelle, auf Wunsch auch als Markdown. Ctrl+Shift+C kopiert den Text sofort. Dafür braucht es das Texterkennungsmodul (12 MB; PaddleOCR-Modelle PP-OCRv6 mit ONNX Runtime, vollständig auf dem eigenen Computer): auf der Seite OCR der Einstellungen installieren, im Installer ankreuzen oder die portable Version mit OCR nehmen. Solange es fehlt, werden die Text-Schaltflächen nicht angezeigt. F4 und Shift+F4 starten eine Aufnahme, die den Text sofort erkennt oder kopiert.
 
 **Wie mache ich eine Scrollaufnahme?**
 

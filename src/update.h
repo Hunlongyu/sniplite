@@ -7,6 +7,8 @@
 #define UPDATE_REPO L"/MrTangLuyao/sniplite"
 #endif
 #define UPDATE_HOST L"github.com"
+/* The installer: as build.bat makes it, and under this very name in every release.
+ * Installed copies ask for it by name when they update, so it must not be renamed. */
 #define SETUP_FILE L"sniplite_win_setup_amd64.exe"
 
 typedef enum {

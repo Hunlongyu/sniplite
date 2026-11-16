@@ -706,7 +706,8 @@ static void upd_done(DWORD code)
 static void ocr_show(void)
 {
     HWND o = S.page[PG_OCR], f = GetFocus();
-    bool there = ocr_installed();
+    bool packed = !ocr_installed() && ocr_packed(); /* in the program itself, unpacked when first used */
+    bool there = ocr_installed() || packed;
     WCHAR t[160];
     if (there)
         wsprintfW(t, T(O_STATE_OK), ocr_size_mb());
@@ -714,7 +715,7 @@ static void ocr_show(void)
         lstrcpynW(t, T(O_STATE_NONE), COUNTOF(t));
     SetDlgItemTextW(o, IDC_O_STATE, t);
     SetDlgItemTextW(o, IDC_O_INSTALL, S.ocr_busy ? T(O_CANCEL_BTN) : T(O_INSTALL_BTN));
-    bool install = S.ocr_busy ? !S.ocr_cancel : !there, remove = !S.ocr_busy && there;
+    bool install = S.ocr_busy ? !S.ocr_cancel : !there, remove = !S.ocr_busy && there && !packed;
     if ((!install && f == GetDlgItem(o, IDC_O_INSTALL)) || (!remove && f == GetDlgItem(o, IDC_O_REMOVE)))
         SendMessageW(S.dlg, WM_NEXTDLGCTL, (WPARAM)S.tabs, TRUE); /* keep Esc/Tab working */
     EnableWindow(GetDlgItem(o, IDC_O_INSTALL), install);
@@ -764,6 +765,8 @@ static void ocr_done(int result)
                     result == OCR_GET_NET ? T(U_DOWNLOAD_FAILED) : result == OCR_GET_CHECK ? T(O_CHECK_FAILED)
                     : result == OCR_GET_WRITE ? T(O_WRITE_FAILED) : L"");
     ocr_show();
+    if (result == OCR_GET_OK)
+        daemon_cmd(L"_reload", NULL); /* its toolbar gets the text buttons */
 }
 
 static void ensure_ini(WCHAR *path)
@@ -801,7 +804,7 @@ static void page_command(HWND page, int id, int code, HWND ctl)
             set_language(lang);
         return;
     }
-    if (id >= IDC_HK_FIELD1 && id <= IDC_HK_FIELD3) {
+    if (id >= IDC_HK_FIELD1 && id <= IDC_HK_FIELD5) {
         int hk = id - IDC_HK_FIELD1 + 1;
         if (code == HKN_BEGIN) {
             daemon_cmd(L"_hotkeys", L"off"); /* let our own hotkeys reach the field */
@@ -813,7 +816,7 @@ static void page_command(HWND page, int id, int code, HWND ctl)
         }
         return;
     }
-    if (id >= IDC_HK_CLEAR1 && id <= IDC_HK_CLEAR3) {
+    if (id >= IDC_HK_CLEAR1 && id <= IDC_HK_CLEAR5) {
         int hk = id - IDC_HK_CLEAR1 + 1;
         S.cfg.mod[hk] = S.cfg.vk[hk] = 0;
         show_hotkeys();
@@ -832,6 +835,10 @@ static void page_command(HWND page, int id, int code, HWND ctl)
         }
         break;
     }
+    case IDC_PIN_TOP:
+        S.cfg.pin_top = IsDlgButtonChecked(page, IDC_PIN_TOP) == BST_CHECKED;
+        apply();
+        break;
     case IDC_TRAY:
         S.cfg.tray = IsDlgButtonChecked(page, IDC_TRAY) == BST_CHECKED;
         apply();
@@ -864,6 +871,7 @@ static void page_command(HWND page, int id, int code, HWND ctl)
     case IDC_O_REMOVE:
         SetDlgItemTextW(page, IDC_O_STATUS, ocr_remove() ? L"" : T(O_WRITE_FAILED));
         ocr_show();
+        daemon_cmd(L"_reload", NULL); /* its toolbar no longer has the text buttons */
         break;
     case IDC_U_AUTO:
         S.cfg.auto_update = IsDlgButtonChecked(page, IDC_U_AUTO) == BST_CHECKED;
@@ -879,6 +887,8 @@ static void page_command(HWND page, int id, int code, HWND ctl)
         if (page == S.page[PG_GENERAL]) {
             S.cfg.tray = d.tray;
             CheckDlgButton(page, IDC_TRAY, d.tray ? BST_CHECKED : BST_UNCHECKED);
+            S.cfg.pin_top = d.pin_top;
+            CheckDlgButton(page, IDC_PIN_TOP, d.pin_top ? BST_CHECKED : BST_UNCHECKED);
             if (autostart_on() || autostart_set(true)) /* on by default */
                 CheckDlgButton(page, IDC_AUTOSTART, BST_CHECKED);
             if (lang_choice() != LG_AUTO && !S.busy) {
@@ -915,9 +925,9 @@ static INT_PTR CALLBACK page_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
     case WM_DRAWITEM: {
         const DRAWITEMSTRUCT *di = (const DRAWITEMSTRUCT *)lp;
         int id = (int)di->CtlID, kind = RI_NONE;
-        if (id >= IDC_HK_CLEAR1 && id <= IDC_HK_CLEAR3)
+        if (id >= IDC_HK_CLEAR1 && id <= IDC_HK_CLEAR5)
             kind = RI_CLEAR;
-        else if (id >= IDC_HK_STATE1 && id <= IDC_HK_STATE3) {
+        else if (id >= IDC_HK_STATE1 && id <= IDC_HK_STATE5) {
             int hk = id - IDC_HK_STATE1 + 1;
             kind = !S.cfg.vk[hk] || S.state[hk] == 2 ? RI_NONE : S.state[hk] ? RI_OK : RI_FAIL;
         } else if (id == IDC_HELPBTN)
@@ -946,6 +956,7 @@ static const struct {
 } kTexts[] = {
     {PG_GENERAL, IDC_AUTOSTART, S_G_AUTOSTART},
     {PG_GENERAL, IDC_TRAY, S_G_TRAY},
+    {PG_GENERAL, IDC_PIN_TOP, S_G_PIN_TOP},
     {PG_GENERAL, IDC_LANG_LABEL, S_G_LANG},
     {PG_GENERAL, IDC_INI_GROUP, S_G_INI_GROUP},
     {PG_GENERAL, IDC_PATH_LABEL, S_G_PATH},
@@ -958,6 +969,8 @@ static const struct {
     {PG_HOTKEYS, IDC_HK_LABEL1, S_H_CAPTURE},
     {PG_HOTKEYS, IDC_HK_LABEL2, S_H_PIN},
     {PG_HOTKEYS, IDC_HK_LABEL3, S_H_TOGGLE},
+    {PG_HOTKEYS, IDC_HK_LABEL4, S_H_OCR},
+    {PG_HOTKEYS, IDC_HK_LABEL5, S_H_OCRCOPY},
     {PG_HOTKEYS, IDC_HINT, S_H_HINT},
     {PG_HOTKEYS, IDC_BUILTIN, S_H_BUILTIN},
     {PG_UPDATE, IDC_U_CHECK, S_U_CHECK_BTN},
@@ -1013,6 +1026,7 @@ static INT_PTR CALLBACK main_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         HWND g = S.page[PG_GENERAL], c = S.page[PG_CAPTURE];
         CheckDlgButton(g, IDC_AUTOSTART, autostart_on() ? BST_CHECKED : BST_UNCHECKED);
         CheckDlgButton(g, IDC_TRAY, S.cfg.tray ? BST_CHECKED : BST_UNCHECKED);
+        CheckDlgButton(g, IDC_PIN_TOP, S.cfg.pin_top ? BST_CHECKED : BST_UNCHECKED);
         WCHAR t[96]; /* the languages: what Windows uses, then each by its own name */
         wsprintfW(t, T(G_LANG_AUTO), lang_name(lang_system()));
         SendDlgItemMessageW(g, IDC_LANG, CB_ADDSTRING, 0, (LPARAM)t);

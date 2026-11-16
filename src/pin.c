@@ -4,6 +4,7 @@
 #include "image.h"
 #include "lang.h"
 #include "ocr.h"
+#include "config.h"
 #include <dwmapi.h>
 #include <math.h>
 #include <windowsx.h>
@@ -13,13 +14,14 @@
 #endif
 
 #define TIMER_LABEL 1
-enum { CM_COPY = 1, CM_SAVE, CM_OCR, CM_RESET, CM_CLOSE, CM_CLOSE_ALL };
+enum { CM_COPY = 1, CM_SAVE, CM_OCR, CM_RESET, CM_TOP_ALL, CM_TOP, CM_CLOSE, CM_CLOSE_ALL };
 
 typedef struct Pin {
     HWND hwnd;
     Img img;
     float zoom;
     int alpha; /* percent, 10..100 */
+    bool top;  /* this pin above other windows, whatever the setting for all of them says */
     bool drag;
     POINT drag_pt, win_pt;
     bool show_label;
@@ -32,7 +34,21 @@ static struct {
     HWND daemon;
     Pin *list;
     int count;
+    bool top_all; /* the setting: every pin above other windows */
 } P;
+
+/* A pin is above other windows when all pins are, or when it was told to be itself. */
+static void pin_layer(Pin *p)
+{
+    SetWindowPos(p->hwnd, P.top_all || p->top ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+}
+
+void pin_top_all(bool on)
+{
+    P.top_all = on;
+    for (Pin *p = P.list; p; p = p->next)
+        pin_layer(p);
+}
 
 static Pin *pin_of(HWND h) { return (Pin *)GetWindowLongPtrW(h, GWLP_USERDATA); }
 
@@ -108,8 +124,11 @@ static void pin_menu(Pin *p, POINT at)
     HMENU m = CreatePopupMenu();
     AppendMenuW(m, MF_STRING, CM_COPY, T(PM_COPY));
     AppendMenuW(m, MF_STRING, CM_SAVE, T(PM_SAVE));
-    AppendMenuW(m, MF_STRING, CM_OCR, T(PM_OCR));
+    if (ocr_there)
+        AppendMenuW(m, MF_STRING, CM_OCR, T(PM_OCR));
     AppendMenuW(m, MF_STRING | (p->zoom == 1.f && p->alpha == 100 ? MF_GRAYED : 0), CM_RESET, T(PM_RESET));
+    AppendMenuW(m, MF_STRING | (P.top_all ? MF_CHECKED : 0), CM_TOP_ALL, T(PM_TOP_ALL));
+    AppendMenuW(m, MF_STRING | (p->top ? MF_CHECKED : 0), CM_TOP, T(PM_TOP));
     AppendMenuW(m, MF_SEPARATOR, 0, NULL);
     AppendMenuW(m, MF_STRING, CM_CLOSE, T(PM_CLOSE));
     AppendMenuW(m, MF_STRING, CM_CLOSE_ALL, T(M_CLOSE_PINS));
@@ -137,6 +156,14 @@ static void pin_menu(Pin *p, POINT at)
         set_zoom(p, 1.f, tl);
         break;
     }
+    case CM_TOP_ALL: /* the setting of the preferences, from here */
+        pin_top_all(!P.top_all);
+        config_set_pin_top(P.top_all);
+        break;
+    case CM_TOP:
+        p->top = !p->top;
+        pin_layer(p);
+        break;
     case CM_CLOSE: DestroyWindow(h); break;
     case CM_CLOSE_ALL: pin_close_all(); break;
     }
@@ -167,6 +194,10 @@ static void paint(Pin *p)
         SetBrushOrgEx(tgt, 0, 0, NULL);
         StretchBlt(tgt, 0, 0, w, h, p->img.dc, 0, 0, p->img.w, p->img.h, SRCCOPY);
     }
+    /* an outline, so a pin stands out from what is behind it: the accent color on the pin in use */
+    HBRUSH edge = CreateSolidBrush(GetForegroundWindow() == p->hwnd ? RGB(26, 140, 255) : RGB(128, 128, 128));
+    FrameRect(tgt, &rc, edge);
+    DeleteObject(edge);
     if (tgt == mem) {
         float s = (float)GetDpiForWindow(p->hwnd) / 96.f;
         HFONT f = CreateFontW(-(int)lroundf(12.f * s), 0, 0, 0, FW_NORMAL, 0, 0, 0, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS,
@@ -231,6 +262,9 @@ static LRESULT CALLBACK pin_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         return 0; /* keep physical pixel size across monitors */
     case WM_ERASEBKGND:
         return 1;
+    case WM_ACTIVATE: /* the outline changes color */
+        InvalidateRect(h, NULL, FALSE);
+        break;
     case WM_PAINT:
         paint(p);
         return 0;
@@ -327,6 +361,7 @@ bool pin_init(HINSTANCE inst, HWND daemon)
 {
     P.inst = inst;
     P.daemon = daemon;
+    P.top_all = true; /* until the settings say otherwise */
     WNDCLASSW wc = {0};
     wc.style = CS_DBLCLKS;
     wc.lpfnWndProc = pin_proc;
@@ -364,7 +399,7 @@ bool pin_add(Img *img, int x, int y, bool at_cursor)
         y = CLAMPI((int)c.y - h / 2, (int)wa.top, (int)wa.bottom - h);
     }
     /* WS_CAPTION (non-client area removed in WM_NCCALCSIZE) gives the native DWM shadow. */
-    HWND hw = CreateWindowExW(WS_EX_TOPMOST | WS_EX_TOOLWINDOW, L"sniplite.pin", L"sniplite", WS_POPUP | WS_CAPTION, x, y, w,
+    HWND hw = CreateWindowExW((P.top_all ? WS_EX_TOPMOST : 0) | WS_EX_TOOLWINDOW, L"sniplite.pin", L"sniplite", WS_POPUP | WS_CAPTION, x, y, w,
                               h, NULL, NULL, P.inst, p);
     if (!hw) {
         img_destroy(&p->img);
@@ -378,7 +413,7 @@ bool pin_add(Img *img, int x, int y, bool at_cursor)
     DwmExtendFrameIntoClientArea(hw, &mg);
     DWORD corner = 1; /* DWMWCP_DONOTROUND */
     DwmSetWindowAttribute(hw, DWMWA_WINDOW_CORNER_PREFERENCE, &corner, sizeof corner);
-    SetWindowPos(hw, HWND_TOPMOST, x, y, w, h, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
+    SetWindowPos(hw, P.top_all ? HWND_TOPMOST : HWND_TOP, x, y, w, h, SWP_FRAMECHANGED | SWP_SHOWWINDOW);
     SetForegroundWindow(hw);
     return true;
 }

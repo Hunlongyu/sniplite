@@ -99,13 +99,16 @@ void config_defaults(Config *c)
     hotkey_parse(L"F1", &c->mod[HK_CAPTURE], &c->vk[HK_CAPTURE]);
     hotkey_parse(L"F3", &c->mod[HK_PIN], &c->vk[HK_PIN]);
     hotkey_parse(L"Shift+F3", &c->mod[HK_TOGGLE], &c->vk[HK_TOGGLE]);
+    hotkey_parse(L"F4", &c->mod[HK_OCR], &c->vk[HK_OCR]);
+    hotkey_parse(L"Shift+F4", &c->mod[HK_OCRCOPY], &c->vk[HK_OCRCOPY]);
     c->tray = true;
+    c->pin_top = true;
     c->auto_update = true;
 }
 
 void config_path(WCHAR *out, int cap) { ini_path(out, cap); }
 
-static const WCHAR *kHkKeys[HK_COUNT] = {NULL, L"hotkey", L"pin_hotkey", L"toggle_hotkey"};
+static const WCHAR *kHkKeys[HK_COUNT] = {NULL, L"hotkey", L"pin_hotkey", L"toggle_hotkey", L"ocr_hotkey", L"ocr_copy_hotkey"};
 
 bool config_load(Config *c)
 {
@@ -126,6 +129,7 @@ bool config_load(Config *c)
     GetPrivateProfileStringW(L"sniplite", L"capture", L"dxgi", v, COUNTOF(v), path);
     c->gdi = arg_eq(v, L"gdi");
     c->tray = GetPrivateProfileIntW(L"sniplite", L"tray", 1, path) != 0;
+    c->pin_top = GetPrivateProfileIntW(L"sniplite", L"pin_top", 1, path) != 0;
     c->auto_update = GetPrivateProfileIntW(L"sniplite", L"auto_update", 1, path) != 0;
     return true;
 }
@@ -146,8 +150,8 @@ bool config_save(const Config *c)
         hotkey_format(c->mod[id], c->vk[id], k);
         str_addf(&s, L"%s=%s\r\n", kHkKeys[id], k);
     }
-    str_addf(&s, L"capture=%s\r\ntray=%d\r\nauto_update=%d\r\n", c->gdi ? L"gdi" : L"dxgi", c->tray ? 1 : 0,
-             c->auto_update ? 1 : 0);
+    str_addf(&s, L"capture=%s\r\ntray=%d\r\nauto_update=%d\r\npin_top=%d\r\n", c->gdi ? L"gdi" : L"dxgi", c->tray ? 1 : 0,
+             c->auto_update ? 1 : 0, c->pin_top ? 1 : 0);
     if (lang_choice() != LG_AUTO) /* kept by lang.c; without the line the language follows Windows */
         str_addf(&s, L"lang=%s\r\n", lang_code(lang_choice()));
     /* UTF-8 without BOM: Notepad shows the comments, and the ASCII keys/values
@@ -167,4 +171,12 @@ bool config_save(const Config *c)
     }
     str_free(&s);
     return ok;
+}
+
+void config_set_pin_top(bool on)
+{
+    Config c;
+    config_load(&c); /* what the file says, not what a command line changed for this run */
+    c.pin_top = on;
+    config_save(&c);
 }

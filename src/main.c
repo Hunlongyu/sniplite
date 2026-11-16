@@ -60,7 +60,9 @@ static void hotkey_apply(int id, UINT mod, UINT vk)
     k->mod = mod;
     k->vk = vk;
     hotkey_format(mod, vk, k->text);
-    k->ok = !vk || RegisterHotKey(D.hwnd, id, mod | MOD_NOREPEAT, vk);
+    /* the two for text only while there is a module to read it: without one they would take keys for nothing */
+    bool wanted = vk && (id < HK_OCR || ocr_there);
+    k->ok = !wanted || RegisterHotKey(D.hwnd, id, mod | MOD_NOREPEAT, vk);
 }
 
 static bool hotkeys_ok(void)
@@ -158,7 +160,7 @@ static void resolve_path(const WCHAR *cwd, const WCHAR *p, WCHAR *out, int cap)
 
 static bool start_opts_parse(int argc, WCHAR **argv, StartOpts *so, Str *err)
 {
-    static const WCHAR *names[HK_COUNT] = {NULL, L"--hotkey", L"--pin-hotkey", L"--toggle-hotkey"};
+    static const WCHAR *names[HK_COUNT] = {NULL, L"--hotkey", L"--pin-hotkey", L"--toggle-hotkey", L"--ocr-hotkey", L"--ocr-copy-hotkey"};
     memset(so, 0, sizeof *so);
     for (int id = 1; id < HK_COUNT; id++) {
         const WCHAR *v = opt_val(argc, argv, names[id]);
@@ -225,7 +227,7 @@ static void status_text(Str *out)
 
 static void status_json(Str *out)
 {
-    static const WCHAR *keys[HK_COUNT] = {NULL, L"capture", L"pin", L"toggle_pins"};
+    static const WCHAR *keys[HK_COUNT] = {NULL, L"capture", L"pin", L"toggle_pins", L"ocr", L"ocr_copy"};
     str_addf(out, L"{\"running\":true,\"version\":\"%s\",\"pid\":%lu,\"backend\":\"%s\",\"capturing\":%s,\"pins\":%d,",
              SNIPLITE_VERSION, GetCurrentProcessId(), shot_backend(), ov_active() ? L"true" : L"false", pin_count());
     str_add(out, L"\"hotkeys\":{");
@@ -314,6 +316,7 @@ static void apply_config(const Config *c, bool force_keys)
     for (int id = 1; id < HK_COUNT; id++)
         if (force_keys || c->mod[id] != D.hk[id].mod || c->vk[id] != D.hk[id].vk || !D.hk[id].ok)
             hotkey_apply(id, c->mod[id], c->vk[id]);
+    pin_top_all(c->pin_top);
     if (c->gdi && gpu_enabled())
         gpu_stop();
     else if (!c->gdi && !gpu_enabled())
@@ -448,6 +451,7 @@ static void reload(void)
     lang_init(NULL);
     Config c;
     config_load(&c);
+    ocr_refresh(); /* the module may have been installed or removed there: its buttons and hotkeys follow */
     apply_config(&c, true);
 }
 
@@ -636,6 +640,10 @@ static int cmd_run(int argc, WCHAR **argv, const WCHAR *cwd, Str *out)
         return cmd_capture(argc, argv, cwd, json, out);
     if (arg_eq(c, L"pin"))
         return cmd_pin(argc, argv, cwd, json, out);
+    if (arg_eq(c, L"ocr")) { /* a capture for its text: shown beside the selection, or with --copy copied at once */
+        ocr_capture(opt_has(argc, argv, L"--copy"));
+        return EXIT_OK;
+    }
     if (arg_eq(c, L"status")) {
         json ? status_json(out) : status_text(out);
         return EXIT_OK;
@@ -654,7 +662,7 @@ static int cmd_run(int argc, WCHAR **argv, const WCHAR *cwd, Str *out)
         if (arg_eq(c, L"_reload"))
             reload();
         for (int id = 1; id < HK_COUNT; id++) /* 1 registered, 0 failed, 2 none */
-            str_addf(out, L"%d ", !D.hk[id].vk ? 2 : D.hk[id].ok ? 1 : 0);
+            str_addf(out, L"%d ", !D.hk[id].vk || (id >= HK_OCR && !ocr_there) ? 2 : D.hk[id].ok ? 1 : 0);
         return EXIT_OK;
     }
     if (arg_eq(c, L"_update")) { /* from `--update-check` */
@@ -844,7 +852,12 @@ static LRESULT CALLBACK daemon_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
                 pin_clipboard();
         } else if (wp == HK_TOGGLE) {
             pin_toggle_all();
+        } else if (wp == HK_OCR || wp == HK_OCRCOPY) {
+            ocr_capture(wp == HK_OCRCOPY);
         }
+        return 0;
+    case WM_APP_OCR_THEN:
+        ocr_then((int)wp);
         return 0;
     case WM_COPYDATA:
         return ipc_handle(h, (HWND)wp, (const COPYDATASTRUCT *)lp);
@@ -917,6 +930,7 @@ static int daemon_main(HINSTANCE inst, int argc, WCHAR **argv, bool from_cli)
     ChangeWindowMessageFilterEx(D.hwnd, WM_COPYDATA, MSGFLT_ALLOW, NULL);
     D.wm_taskbar = RegisterWindowMessageW(L"TaskbarCreated");
     ChangeWindowMessageFilterEx(D.hwnd, D.wm_taskbar, MSGFLT_ALLOW, NULL);
+    ocr_refresh();
     if (!ov_init(inst, D.hwnd) || !pin_init(inst, D.hwnd))
         return EXIT_FAIL;
 

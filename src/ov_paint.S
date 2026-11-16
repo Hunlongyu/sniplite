@@ -317,17 +317,17 @@ SFUNC scale_tab
         movss xmm0, dword ptr [rip + .Lf_rad + 8]
         mulss xmm0, xmm1
         movss dword ptr [rip + .Lrad + 8], xmm0
-        /* bars: buttons and separators of kTbOrder */
+        /* bars: buttons and separators of the toolbar's order */
         xor ecx, ecx                            /* separators */
         xor edx, edx
-        lea r8, [rip + kTbOrder]
+        mov r8, qword ptr [rip + tb_order]
 1:      mov eax, dword ptr [r8 + rdx*4]
         shr eax, 31
         add ecx, eax
         inc edx
-        cmp edx, TB_ITEMS
+        cmp edx, dword ptr [rip + tb_count]
         jb 1b
-        mov edx, TB_ITEMS
+        mov edx, dword ptr [rip + tb_count]
         sub edx, ecx                            /* buttons */
         imul edx, dword ptr [rip + .Ls30]
         imul ecx, dword ptr [rip + .Ls9]
@@ -985,7 +985,7 @@ FUNC tb_items
         add r8d, r11d                           /* x */
         add r9d, r11d                           /* y */
         lea r12d, [r9 + r10]                    /* y + bs */
-        lea rdi, [rip + kTbOrder]
+        mov rdi, qword ptr [rip + tb_order]
         xor ecx, ecx
 .Lti_order:
         mov edx, dword ptr [rdi + rcx*4]
@@ -1001,7 +1001,7 @@ FUNC tb_items
         mov dword ptr [rsi + ITEM_RC + RC_B], r12d
         add rsi, ITEM_BYTES
 2:      inc ecx
-        cmp ecx, TB_ITEMS
+        cmp ecx, dword ptr [rip + tb_count]
         jb .Lti_order
         mov r8d, dword ptr [rbx + VIS_PB + RC_L]
         mov r9d, dword ptr [rbx + VIS_PB + RC_T]
@@ -4339,7 +4339,7 @@ FUNC draw_toolbar
         mov edi, dword ptr [rsi + VIS_TB + RC_L]        /* separators */
         add edi, dword ptr [rip + .Ls4]         /* x */
         xor ebp, ebp
-5:      lea rax, [rip + kTbOrder]
+5:      mov rax, qword ptr [rip + tb_order]
         cmp dword ptr [rax + rbp*4], 0
         jge 7f
         mov eax, dword ptr [rip + .Ls9]
@@ -4369,7 +4369,7 @@ FUNC draw_toolbar
         jmp 8f
 7:      add edi, r14d
 8:      inc ebp
-        cmp ebp, TB_ITEMS
+        cmp ebp, dword ptr [rip + tb_count]
         jb 5b
         call prop_tool_
         mov dword ptr [rsp + DT_PT], eax

@@ -1,0 +1,18 @@
+The text recognition module of sniplite
+
+This folder holds software and models made by others, unchanged.
+
+onnxruntime.dll
+    ONNX Runtime 1.26.0, Copyright (c) Microsoft Corporation, MIT License.
+    https://github.com/microsoft/onnxruntime
+    See LICENSE-onnxruntime.txt and ThirdPartyNotices-onnxruntime.txt.
+
+PP-OCRv6_det_tiny.onnx, PP-OCRv6_rec_tiny.onnx
+    The PP-OCRv6 text detection and recognition models of PaddleOCR,
+    Copyright (c) PaddlePaddle Authors, Apache License 2.0.
+    https://github.com/PaddlePaddle/PaddleOCR
+    In the ONNX form published by RapidOCR, Apache License 2.0.
+    https://github.com/RapidAI/RapidOCR
+    See LICENSE-PaddleOCR.txt for the text of the Apache License 2.0.
+
+sniplite itself is under the MIT License: https://github.com/MrTangLuyao/sniplite
