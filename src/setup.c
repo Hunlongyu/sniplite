@@ -1,17 +1,23 @@
 /* sniplite_win_setup_amd64.exe: the installer.
  *
  * Per-user (no admin, no UAC), no registry. Copies the two program files that are
- * embedded as resources into %LOCALAPPDATA%\Programs\sniplite, adds a Start menu
- * folder (sniplite and its uninstaller), optionally the Startup shortcut, then starts
- * sniplite. The new files are written first (*.new); only then is a running
- * sniplite closed and both files swapped in, or neither. Replaced files are moved
- * aside as *.old (allowed even while they run); sniplite deletes them on its next start.
+ * embedded as resources into the install folder, adds a Start menu folder (sniplite and
+ * its uninstaller), optionally the Startup shortcut, then starts sniplite. The new files
+ * are written first (*.new); only then is a running sniplite closed and both files
+ * swapped in, or neither. Replaced files are moved aside as *.old (allowed even while
+ * they run); sniplite deletes them on its next start.
  *
- *   sniplite_win_setup_amd64.exe            window with two checkboxes: start with Windows, and
- *                                           the text recognition module (off unless ticked:
- *                                           sniplite then downloads it, in its preferences)
- *   sniplite_win_setup_amd64.exe /S         silent; a fresh install turns that on
+ * The install folder: the one given with /D=, else where sniplite is installed already
+ * (the folder its Start menu shortcut points into), else %LOCALAPPDATA%\Programs\sniplite.
+ * A first install may choose another folder in the window; an installation is replaced
+ * where it is (to move it, uninstall it first).
+ *
+ *   sniplite_win_setup_amd64.exe            window: the folder, and two checkboxes: start with
+ *                                           Windows, and the text recognition module (off unless
+ *                                           ticked: sniplite then downloads it, in its preferences)
+ *   sniplite_win_setup_amd64.exe /S         silent; a fresh install turns start with Windows on
  *   sniplite_win_setup_amd64.exe /update    silent, keeps the current choice
+ *   ... "/D=C:\some folder\sniplite"        into that folder (a whole path; not a drive by itself)
  * Exit code 0 = installed, 1 = failed or cancelled.
  *
  * The window speaks the language sniplite is set to (an installed sniplite.ini),
@@ -20,6 +26,7 @@
 #include "install.h"
 #include "resource.h"
 #include <shlobj.h>
+#include <shobjidl.h>
 
 static struct {
     WCHAR dir[MAX_PATH], exe[MAX_PATH];
@@ -67,6 +74,84 @@ static bool autostart_on(void)
 {
     WCHAR p[MAX_PATH];
     return special(CSIDL_STARTUP, STARTUP_LNK, p) && exists(p);
+}
+
+/* I.dir and I.exe from a path: made whole, without a last backslash. Not a drive by
+ * itself: "C:" would even mean the folder the installer was started in. */
+static bool set_dir(const WCHAR *dir)
+{
+    WCHAR full[MAX_PATH];
+    int given = lstrlenW(dir);
+    while (given > 0 && (dir[given - 1] == L'\\' || dir[given - 1] == L'/'))
+        given--;
+    DWORD n = given > 0 && dir[given - 1] != L':' ? GetFullPathNameW(dir, MAX_PATH, full, NULL) : 0;
+    if (!n || n >= MAX_PATH)
+        return false;
+    while (n > 0 && full[n - 1] == L'\\')
+        full[--n] = 0;
+    if (!join(I.exe, full, L"sniplite.exe"))
+        return false;
+    lstrcpyW(I.dir, full);
+    return true;
+}
+
+/* Where sniplite is installed: the folder its Start menu shortcut points into, if the
+ * program is still there. The shortcut is read as it is, nothing is searched for. */
+static bool installed_dir(WCHAR *dir)
+{
+    WCHAR menu[MAX_PATH], lnk[MAX_PATH], exe[MAX_PATH] = L"";
+    IShellLinkW *sl = NULL;
+    IPersistFile *pf = NULL;
+    if (!special(CSIDL_PROGRAMS, MENU_FOLDER, menu) || !join(lnk, menu, MENU_APP_LNK) || !exists(lnk))
+        return false;
+    if (SUCCEEDED(CoCreateInstance(&CLSID_ShellLink, NULL, CLSCTX_INPROC_SERVER, &IID_IShellLinkW, (void **)&sl))) {
+        if (SUCCEEDED(IShellLinkW_QueryInterface(sl, &IID_IPersistFile, (void **)&pf))) {
+            if (FAILED(IPersistFile_Load(pf, lnk, STGM_READ)) || IShellLinkW_GetPath(sl, exe, MAX_PATH, NULL, SLGP_RAWPATH) != S_OK)
+                exe[0] = 0;
+            IPersistFile_Release(pf);
+        }
+        IShellLinkW_Release(sl);
+    }
+    WCHAR *name = wcsrchr(exe, L'\\');
+    if (!name || lstrcmpiW(name + 1, L"sniplite.exe") || !exists(exe))
+        return false;
+    *name = 0;
+    lstrcpyW(dir, exe);
+    return true;
+}
+
+/* The folder picker of Windows. The program gets a folder of its own in what was picked,
+ * unless a folder named sniplite was picked. */
+static bool browse(HWND owner)
+{
+    IFileOpenDialog *d = NULL;
+    IShellItem *item = NULL;
+    WCHAR *path = NULL;
+    bool ok = false;
+    if (FAILED(CoCreateInstance(&CLSID_FileOpenDialog, NULL, CLSCTX_INPROC_SERVER, &IID_IFileOpenDialog, (void **)&d)))
+        return false;
+    DWORD opt = 0;
+    IFileOpenDialog_GetOptions(d, &opt);
+    IFileOpenDialog_SetOptions(d, opt | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+    if (SUCCEEDED(IFileOpenDialog_Show(d, owner)) && SUCCEEDED(IFileOpenDialog_GetResult(d, &item))) {
+        if (SUCCEEDED(IShellItem_GetDisplayName(item, SIGDN_FILESYSPATH, &path))) {
+            WCHAR dir[MAX_PATH + 16];
+            int n = lstrlenW(path);
+            if (n > 0 && n < MAX_PATH) {
+                lstrcpyW(dir, path);
+                while (n > 0 && dir[n - 1] == L'\\')
+                    dir[--n] = 0;
+                const WCHAR *last = wcsrchr(dir, L'\\');
+                if (lstrcmpiW(last ? last + 1 : dir, L"sniplite"))
+                    lstrcatW(dir, L"\\sniplite");
+                ok = set_dir(dir);
+            }
+            CoTaskMemFree(path);
+        }
+        IShellItem_Release(item);
+    }
+    IFileOpenDialog_Release(d);
+    return ok;
 }
 
 /* Close the background process (and its pins). Helper processes started from the
@@ -252,6 +337,13 @@ static bool install(int autostart, bool ocr)
     return ok;
 }
 
+static void show_path(HWND h)
+{
+    WCHAR t[MAX_PATH + 64];
+    wsprintfW(t, T(S_PATH), I.dir);
+    SetDlgItemTextW(h, IDC_S_PATH, t);
+}
+
 static INT_PTR CALLBACK dlg_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
 {
     (void)lp;
@@ -275,13 +367,15 @@ static INT_PTR CALLBACK dlg_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         SetDlgItemTextW(h, IDC_S_SUB, T(S_SUB));
         SetDlgItemTextW(h, IDC_S_AUTOSTART, T(S_AUTOSTART));
         SetDlgItemTextW(h, IDC_S_OCR, T(S_OCR));
+        SetDlgItemTextW(h, IDC_S_BROWSE, T(S_BROWSE));
         SetDlgItemTextW(h, IDOK, T(S_INSTALL));
         SetDlgItemTextW(h, IDCANCEL, T(S_CANCEL));
-        WCHAR t[MAX_PATH + 64];
-        wsprintfW(t, T(S_PATH), I.dir);
-        SetDlgItemTextW(h, IDC_S_PATH, t);
-        /* first install: on by default; reinstall/upgrade: show the current choice */
+        show_path(h);
+        /* first install: on by default, and the folder can be chosen; reinstall/upgrade:
+         * the current choice, where it is */
         CheckDlgButton(h, IDC_S_AUTOSTART, !exists(I.exe) || autostart_on() ? BST_CHECKED : BST_UNCHECKED);
+        if (exists(I.exe))
+            ShowWindow(GetDlgItem(h, IDC_S_BROWSE), SW_HIDE);
         SetForegroundWindow(h);
         return TRUE;
     }
@@ -293,6 +387,7 @@ static INT_PTR CALLBACK dlg_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
             }
             EnableWindow(GetDlgItem(h, IDOK), FALSE);
             EnableWindow(GetDlgItem(h, IDCANCEL), FALSE);
+            EnableWindow(GetDlgItem(h, IDC_S_BROWSE), FALSE);
             HCURSOR old = SetCursor(LoadCursorW(NULL, IDC_WAIT));
             bool ok = install(IsDlgButtonChecked(h, IDC_S_AUTOSTART) == BST_CHECKED, IsDlgButtonChecked(h, IDC_S_OCR) == BST_CHECKED);
             SetCursor(old);
@@ -303,6 +398,7 @@ static INT_PTR CALLBACK dlg_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
                 SetDlgItemTextW(h, IDC_S_PATH, own ? T(S_DONE_OWN) : T(S_DONE));
                 ShowWindow(GetDlgItem(h, IDC_S_AUTOSTART), SW_HIDE);
                 ShowWindow(GetDlgItem(h, IDC_S_OCR), SW_HIDE);
+                ShowWindow(GetDlgItem(h, IDC_S_BROWSE), SW_HIDE);
                 ShowWindow(GetDlgItem(h, IDCANCEL), SW_HIDE);
                 SetDlgItemTextW(h, IDOK, T(S_FINISH));
                 EnableWindow(GetDlgItem(h, IDOK), TRUE);
@@ -311,12 +407,17 @@ static INT_PTR CALLBACK dlg_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
                 MessageBoxW(h, T(S_FAILED), T(S_CAPTION), MB_OK | MB_ICONERROR);
                 EnableWindow(GetDlgItem(h, IDOK), TRUE);
                 EnableWindow(GetDlgItem(h, IDCANCEL), TRUE);
+                EnableWindow(GetDlgItem(h, IDC_S_BROWSE), TRUE);
                 SendMessageW(h, WM_NEXTDLGCTL, (WPARAM)GetDlgItem(h, IDOK), TRUE);
             }
             return TRUE;
         }
         if (LOWORD(wp) == IDCANCEL) {
             EndDialog(h, I.done ? 0 : 1);
+            return TRUE;
+        }
+        if (LOWORD(wp) == IDC_S_BROWSE && browse(h)) {
+            show_path(h);
             return TRUE;
         }
         break;
@@ -335,17 +436,25 @@ int WINAPI wWinMain(HINSTANCE inst, HINSTANCE prev, PWSTR cmdline, int show)
     int argc;
     WCHAR **argv = cmdline_split(GetCommandLineW(), &argc);
     bool silent = false, update = false;
+    const WCHAR *given = NULL;
     for (int i = 1; i < argc; i++) {
         if (arg_eq(argv[i], L"/S") || arg_eq(argv[i], L"-S"))
             silent = true;
         else if (arg_eq(argv[i], L"/update") || arg_eq(argv[i], L"--update"))
             update = true;
+        else if ((argv[i][0] == L'/' || argv[i][0] == L'-') && (argv[i][1] | 32) == L'd' && argv[i][2] == L'=')
+            given = argv[i] + 3;
     }
-    if (!ExpandEnvironmentStringsW(INSTALL_DIR, I.dir, MAX_PATH) || I.dir[0] == L'%' || !join(I.exe, I.dir, L"sniplite.exe"))
-        return 1;
-    WCHAR ini[MAX_PATH];
-    lang_init(join(ini, I.dir, L"sniplite.ini") ? ini : L"");
     CoInitializeEx(NULL, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE);
+    WCHAR dir[MAX_PATH], ini[MAX_PATH];
+    if (given) { /* a folder that cannot be one is an error, not a reason to install somewhere else */
+        if (!set_dir(given))
+            return 1;
+    } else if (!installed_dir(dir) || !set_dir(dir)) {
+        if (!ExpandEnvironmentStringsW(INSTALL_DIR, dir, MAX_PATH) || dir[0] == L'%' || !set_dir(dir))
+            return 1;
+    }
+    lang_init(join(ini, I.dir, L"sniplite.ini") ? ini : L"");
     if (silent || update)
         return install(update || exists(I.exe) ? -1 : 1, false) ? 0 : 1;
     return (int)lang_dialog_box(inst, IDD_SETUP, NULL, dlg_proc);

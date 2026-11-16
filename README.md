@@ -128,3 +128,11 @@ Install [w64devkit](https://github.com/skeeto/w64devkit) (or another MinGW-w64),
 ## License
 
 [MIT](LICENSE)
+
+## Third-party open source
+
+sniplite itself uses nothing but the system libraries of Windows. The optional text recognition module is the work of others, passed on unchanged with their licenses (they are in the module's `ocr` folder and on the [module's release page](https://github.com/MrTangLuyao/sniplite/releases/tag/ocr-1)):
+
+- [ONNX Runtime](https://github.com/microsoft/onnxruntime) 1.26.0, Copyright (c) Microsoft Corporation, MIT License
+- The PP-OCRv6 models of [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR), Copyright (c) PaddlePaddle Authors, Apache License 2.0
+- Their ONNX form comes from [RapidOCR](https://github.com/RapidAI/RapidOCR), Apache License 2.0

@@ -40,6 +40,7 @@
 #define IDC_LICENSE 147
 #define IDC_HK_LABEL4 148
 #define IDC_HK_LABEL5 149
+#define IDC_PROJECT 165 /* the About page: opens the project's page */
 
 /* explicit per-row ids (resource scripts cannot do arithmetic reliably) */
 #define IDC_HK_FIELD1 140
@@ -84,5 +85,6 @@
 #define IDC_S_PATH 203
 #define IDC_S_AUTOSTART 204
 #define IDC_S_OCR 205
+#define IDC_S_BROWSE 206
 #define IDR_APP_EXE 210
 #define IDR_APP_COM 211

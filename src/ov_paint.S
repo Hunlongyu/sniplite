@@ -134,7 +134,11 @@
 
         .section .data$ov_paint,"dw"
         .balign 4
-.Lst_key:       .long 0xFFFFFFFF        /* O.s (its bits) the scale table holds; never a real scale */
+/* O.s (its bits) the scale table holds; never a real scale at first. The table also holds
+ * the tool bar's width, so whoever changes the bar's order (ocr_refresh) sets this back. */
+        .globl ovp_scale_key
+ovp_scale_key:
+.Lst_key:       .long 0xFFFFFFFF
 
         .section .bss$ov_paint,"bw"
         .balign 16

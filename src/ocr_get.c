@@ -1,39 +1,41 @@
-/* Getting the text recognition module: three files into the "ocr" folder next to the
- * program, each from where its makers publish it.
+/* Getting the text recognition module: the files of the "ocr" folder next to the program.
  *
- *   PP-OCRv6_det_tiny.onnx, PP-OCRv6_rec_tiny.onnx   the models, as RapidOCR converted
- *                                                    them, from ModelScope
- *   onnxruntime.dll                                  ONNX Runtime 1.26.0, out of its
- *                                                    Python package on PyPI
+ *   onnxruntime.dll                                  ONNX Runtime 1.26.0
+ *   PP-OCRv6_det_tiny.onnx, PP-OCRv6_rec_tiny.onnx   the PP-OCRv6 models of PaddleOCR, as
+ *                                                    RapidOCR converted them
+ *   NOTICE.txt and the licenses                      whose work these are
  *
- * The package is a zip of 13 MB of which the library is 5.9 MB, so only those bytes
- * are asked for (a range request) and inflated here. Every file is checked against
- * the SHA-256 written below before it gets its name: what is installed is exactly
- * what this version of the program was tested with, whatever the servers send.
+ * They travel as one zip (pack.bat makes it). Settings downloads it from this project's
+ * own releases, where it is published once under a tag of its own; the portable program
+ * with OCR has it after itself in its own file. Either way the same code takes it apart:
+ * each of the three files is checked against the SHA-256 written below before it gets
+ * its name, so what is installed is exactly what this version of the program was tested
+ * with, and nothing but those three and text files is written.
  *
- * Runs in the preferences window's process, on a worker thread. */
+ * Runs in the preferences window's process, on a worker thread, or in the helper that
+ * reads text (the carried zip, the first time). */
 #include "ocr.h"
 #include "update.h"
 
+/* The published zip. Its size is known here: for the progress, and nothing else is taken.
+ * A changed module is published under a new tag, with its size and the hashes below. */
+#define MODULE_PATH UPDATE_REPO L"/releases/download/ocr-1/sniplite_ocr.zip"
+#define MODULE_BYTES 11651861u
+
 typedef struct {
-    const WCHAR *host, *path, *name;
-    uint32_t at, bytes; /* the bytes of the download that are wanted */
-    uint32_t size;      /* of the file, installed */
-    bool deflated;
-    uint8_t sha[32];    /* of the file, installed */
+    const WCHAR *name;
+    uint32_t size;
+    uint8_t sha[32];
 } Part;
 
-#define MODELS L"/models/RapidAI/RapidOCR/resolve/v3.10.0/onnx/PP-OCRv6/"
 static const Part kParts[] = {
-    {L"www.modelscope.cn", MODELS L"det/PP-OCRv6_det_tiny.onnx", L"PP-OCRv6_det_tiny.onnx", 0, 1829618, 1829618, false,
+    {L"PP-OCRv6_det_tiny.onnx", 1829618,
      {0xf4, 0x2c, 0x0f, 0xbd, 0x29, 0x4d, 0x95, 0xea, 0xc1, 0xa5, 0x50, 0xe1, 0x31, 0xb2, 0x77, 0xda,
       0xc9, 0x74, 0x62, 0xc8, 0x02, 0x5f, 0xa4, 0xb6, 0xc3, 0xce, 0xc1, 0xb7, 0x89, 0x4b, 0xd3, 0xd5}},
-    {L"www.modelscope.cn", MODELS L"rec/PP-OCRv6_rec_tiny.onnx", L"PP-OCRv6_rec_tiny.onnx", 0, 4489813, 4489813, false,
+    {L"PP-OCRv6_rec_tiny.onnx", 4489813,
      {0xe1, 0x6e, 0x24, 0x2d, 0xe5, 0x93, 0x7a, 0xd9, 0x26, 0x09, 0x22, 0x3f, 0x19, 0xbc, 0x2a, 0xff,
       0x37, 0x27, 0xee, 0x40, 0xb0, 0x95, 0xf9, 0x96, 0x90, 0x7c, 0x24, 0x74, 0x9b, 0xad, 0x25, 0x1b}},
-    {L"files.pythonhosted.org",
-     L"/packages/44/fc/026d0a7162b9c2153dac292baea9e027c42304dc1d9dc6f8ff5b4cfbaedd/onnxruntime-1.26.0-cp312-cp312-win_amd64.whl",
-     L"onnxruntime.dll", 45852, 5896380, 16783672, true,
+    {L"onnxruntime.dll", 16783672,
      {0xef, 0xa1, 0x4d, 0xc0, 0xf3, 0xe8, 0xd6, 0xe4, 0xfc, 0x7c, 0xe0, 0xb9, 0xb5, 0xaa, 0x70, 0xd6,
       0xe2, 0x7d, 0xee, 0xc9, 0x08, 0xaf, 0x05, 0xc1, 0xfa, 0x9a, 0x37, 0x27, 0x0f, 0x57, 0x46, 0x0b}},
 };
@@ -285,7 +287,10 @@ static bool inflate(const uint8_t *in, size_t inlen, uint8_t *out, size_t outlen
     return ok && s.outpos == outlen;
 }
 
-/* ---- the files ---- */
+/* ---- the zip ---- */
+
+static uint32_t rd32(const uint8_t *p) { return p[0] | p[1] << 8 | p[2] << 16 | (uint32_t)p[3] << 24; }
+static uint32_t rd16(const uint8_t *p) { return p[0] | p[1] << 8; }
 
 static bool part_path(const WCHAR *name, const WCHAR *suffix, WCHAR *path, int cap)
 {
@@ -297,13 +302,94 @@ static bool part_path(const WCHAR *name, const WCHAR *suffix, WCHAR *path, int c
     return true;
 }
 
+/* one file into the module's folder: written under another name, then given its own */
+static bool file_write(const WCHAR *name, const uint8_t *data, uint32_t n)
+{
+    WCHAR path[MAX_PATH * 2], tmp[MAX_PATH * 2];
+    if (!part_path(name, L"", path, COUNTOF(path)) || !part_path(name, L".part", tmp, COUNTOF(tmp)))
+        return false;
+    HANDLE h = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    DWORD wrote = 0;
+    bool ok = h != INVALID_HANDLE_VALUE && WriteFile(h, data, n, &wrote, NULL) && wrote == n;
+    if (h != INVALID_HANDLE_VALUE)
+        CloseHandle(h);
+    if (!ok || !MoveFileExW(tmp, path, MOVEFILE_REPLACE_EXISTING)) {
+        DeleteFileW(tmp);
+        return false;
+    }
+    return true;
+}
+
+/* The zip, whole in memory, taken apart into the module's folder: OCR_GET_OK, _CHECK or
+ * _WRITE. A zip is read from its end, where its directory is (no comment after it: pack.bat
+ * writes none). Only plain files right in "ocr/" are looked at: the module's three, each
+ * with the size and the SHA-256 it must have, and text files (the notice, the licenses).
+ * Nothing else is written, so nothing can land outside the folder or be loaded from it. */
+static int zip_unpack(const uint8_t *zip, size_t n)
+{
+    WCHAR dir[MAX_PATH * 2];
+    if (n < 22 || rd32(zip + n - 22) != 0x06054b50)
+        return OCR_GET_CHECK;
+    const uint8_t *end = zip + n - 22;
+    uint32_t count = rd16(end + 10), dir_bytes = rd32(end + 12), dir_at = rd32(end + 16);
+    if ((uint64_t)dir_at + dir_bytes > n - 22)
+        return OCR_GET_CHECK;
+    ocr_dir(dir, COUNTOF(dir));
+    if (!CreateDirectoryW(dir, NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
+        return OCR_GET_WRITE;
+    const uint8_t *e = zip + dir_at, *dir_end = e + dir_bytes;
+    for (uint32_t i = 0; i < count; i++) {
+        if (dir_end - e < 46 || rd32(e) != 0x02014b50)
+            return OCR_GET_CHECK;
+        uint32_t method = rd16(e + 10), csize = rd32(e + 20), usize = rd32(e + 24), nlen = rd16(e + 28), at = rd32(e + 42);
+        const char *name = (const char *)e + 46;
+        if ((size_t)(dir_end - e) < 46 + (size_t)nlen + rd16(e + 30) + rd16(e + 32))
+            return OCR_GET_CHECK;
+        e += 46 + nlen + rd16(e + 30) + rd16(e + 32);
+        WCHAR file[64];
+        bool plain = nlen > 4 && nlen < 4 + COUNTOF(file) && !memcmp(name, "ocr/", 4) && name[4] != '.';
+        for (uint32_t c = 4; plain && c < nlen; c++) {
+            char ch = name[c];
+            plain = ch > 32 && ch < 127 && ch != '/' && ch != '\\' && ch != ':';
+            file[c - 4] = (WCHAR)ch;
+        }
+        if (!plain)
+            continue; /* the folder's own entry, or something not expected here */
+        file[nlen - 4] = 0;
+        const Part *part = NULL;
+        for (int k = 0; k < COUNTOF(kParts); k++)
+            if (!lstrcmpiW(file, kParts[k].name))
+                part = &kParts[k];
+        if (!part && (nlen < 8 || lstrcmpiW(file + nlen - 8, L".txt")))
+            continue;
+        if ((part && usize != part->size) || (uint64_t)at + 30 > dir_at || rd32(zip + at) != 0x04034b50)
+            return OCR_GET_CHECK;
+        const uint8_t *data = zip + at + 30 + rd16(zip + at + 26) + rd16(zip + at + 28);
+        if (data > zip + dir_at || (size_t)(zip + dir_at - data) < csize)
+            return OCR_GET_CHECK;
+        uint8_t *mem = method == 8 ? mem_alloc(usize ? usize : 1) : NULL, sha[32];
+        const uint8_t *out = mem ? mem : data;
+        int result = method == 8 ? (mem && inflate(data, csize, mem, usize) ? OCR_GET_OK : OCR_GET_CHECK)
+                                 : method == 0 && csize == usize ? OCR_GET_OK : OCR_GET_CHECK;
+        if (result == OCR_GET_OK && part) {
+            sha256(out, usize, sha);
+            if (memcmp(sha, part->sha, 32))
+                result = OCR_GET_CHECK;
+        }
+        if (result == OCR_GET_OK && !file_write(file, out, usize))
+            result = OCR_GET_WRITE;
+        mem_free(mem);
+        if (result != OCR_GET_OK)
+            return result;
+    }
+    return ocr_installed() ? OCR_GET_OK : OCR_GET_CHECK;
+}
+
+/* ---- downloaded ---- */
+
 typedef struct {
     uint8_t *buf;
-    uint32_t have, want;
-    uint32_t at;          /* where the wanted bytes begin in the whole file */
-    DWORD status;         /* 206: the server sent just them; 200: the file from its start */
-    bool begun;
-    uint32_t done, total;      /* of all the parts, for the progress */
+    uint32_t have;
     volatile LONG *cancel;
     void (*progress)(int, void *);
     void *ctx;
@@ -313,112 +399,41 @@ typedef struct {
 static bool fetch_sink(const void *data, DWORD n, void *ctx)
 {
     Fetch *f = ctx;
-    const uint8_t *p = data;
-    if (*f->cancel)
-        return false;
-    if (!f->begun) {
-        f->begun = true;
-        if (f->status == 206)
-            f->at = 0;
-    }
-    if (f->at) { /* the server ignored the range: pass over what comes before */
-        DWORD skip = MINI(f->at, n);
-        f->at -= skip, p += skip, n -= skip;
-    }
-    DWORD k = MINI(n, f->want - f->have);
-    memcpy(f->buf + f->have, p, k);
-    f->have += k;
-    int pct = (int)((uint64_t)(f->done + f->have) * 100 / f->total);
+    if (*f->cancel || n > MODULE_BYTES - f->have)
+        return false; /* given up, or not the file that was published */
+    memcpy(f->buf + f->have, data, n);
+    f->have += n;
+    int pct = (int)((uint64_t)f->have * 100 / MODULE_BYTES);
     if (pct != f->shown && f->progress)
         f->progress(f->shown = pct, f->ctx);
-    return f->have < f->want; /* enough: the rest of a whole file is not wanted */
-}
-
-static bool same_file(const Part *p)
-{
-    WCHAR path[MAX_PATH * 2];
-    WIN32_FILE_ATTRIBUTE_DATA fa;
-    return part_path(p->name, L"", path, COUNTOF(path)) && GetFileAttributesExW(path, GetFileExInfoStandard, &fa) &&
-           !fa.nFileSizeHigh && fa.nFileSizeLow == p->size;
+    return true;
 }
 
 int ocr_get(volatile LONG *cancel, void (*progress)(int percent, void *ctx), void *ctx)
 {
-    WCHAR dir[MAX_PATH * 2], path[MAX_PATH * 2], tmp[MAX_PATH * 2];
-    ocr_dir(dir, COUNTOF(dir));
-    if (!CreateDirectoryW(dir, NULL) && GetLastError() != ERROR_ALREADY_EXISTS)
+    Fetch f = {mem_alloc(MODULE_BYTES), 0, cancel, progress, ctx, -1};
+    DWORD status;
+    if (!f.buf)
         return OCR_GET_WRITE;
-    Fetch f = {0};
-    f.cancel = cancel, f.progress = progress, f.ctx = ctx, f.shown = -1;
-    for (int i = 0; i < COUNTOF(kParts); i++)
-        f.total += kParts[i].bytes;
-    int result = OCR_GET_OK;
-    for (int i = 0; i < COUNTOF(kParts) && result == OCR_GET_OK; i++) {
-        const Part *p = &kParts[i];
-        if (same_file(p)) { /* there from an earlier, interrupted time */
-            f.done += p->bytes;
-            continue;
-        }
-        if (!part_path(p->name, L"", path, COUNTOF(path)) || !part_path(p->name, L".part", tmp, COUNTOF(tmp)))
-            return OCR_GET_WRITE;
-        uint8_t *got = mem_alloc(p->bytes), *file = got, sha[32];
-        WCHAR range[64] = L"";
-        f.buf = got, f.have = 0, f.want = p->bytes, f.at = p->at, f.begun = false;
-        if (!got)
-            return OCR_GET_WRITE;
-        if (p->at)
-            wsprintfW(range, L"Range: bytes=%u-%u\r\n", p->at, p->at + p->bytes - 1);
-        http_fetch(p->host, p->path, range[0] ? range : NULL, &f.status, fetch_sink, &f);
-        if (*cancel)
-            result = OCR_GET_CANCEL;
-        else if (f.have != f.want)
-            result = OCR_GET_NET;
-        if (result == OCR_GET_OK && p->deflated) {
-            file = mem_alloc(p->size);
-            if (!file || !inflate(got, p->bytes, file, p->size))
-                result = OCR_GET_CHECK;
-        }
-        if (result == OCR_GET_OK) {
-            sha256(file, p->size, sha);
-            if (memcmp(sha, p->sha, 32))
-                result = OCR_GET_CHECK;
-        }
-        if (result == OCR_GET_OK) {
-            HANDLE h = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-            DWORD wrote = 0;
-            bool ok = h != INVALID_HANDLE_VALUE && WriteFile(h, file, p->size, &wrote, NULL) && wrote == p->size;
-            if (h != INVALID_HANDLE_VALUE)
-                CloseHandle(h);
-            if (!ok || !MoveFileExW(tmp, path, MOVEFILE_REPLACE_EXISTING)) {
-                DeleteFileW(tmp);
-                result = OCR_GET_WRITE;
-            }
-        }
-        if (file != got)
-            mem_free(file);
-        mem_free(got);
-        f.done += p->bytes;
-    }
+    bool whole = http_fetch(UPDATE_HOST, MODULE_PATH, NULL, &status, fetch_sink, &f) && f.have == MODULE_BYTES;
+    int result = *cancel ? OCR_GET_CANCEL : !whole ? OCR_GET_NET : zip_unpack(f.buf, f.have);
+    mem_free(f.buf);
     return result;
 }
 
-/* ---- the module carried by the program itself ----
+/* ---- carried by the program itself ----
  *
- * sniplite_<version>_portable_with_OCR_x64.exe is sniplite.exe with a zip of the ocr folder
- * put after it (pack.bat: copy /b), so the module travels in the one file. A zip is read from
- * its end, where its directory is, and the directory says where each file begins, counted
- * from the zip's own start: here that is the end of the program. The first time text is to be
- * read, the folder is written beside the program, every file of the module checked against
- * its SHA-256 as a downloaded one would be. A sniplite.exe without the zip is not slowed by
- * any of this: the last 22 bytes of the file are looked at once. */
-
-static uint32_t rd32(const uint8_t *p) { return p[0] | p[1] << 8 | p[2] << 16 | (uint32_t)p[3] << 24; }
-static uint32_t rd16(const uint8_t *p) { return p[0] | p[1] << 8; }
+ * sniplite_<version>_portable_with_OCR_x64.exe is sniplite.exe with the zip put after it
+ * (pack.bat: copy /b), so the module travels in the one file. The zip's last record says how
+ * long its directory is and where that begins, counted from the zip's own start: so where the
+ * zip begins in the program's file is known from the file's end. The first time text is to be
+ * read, the folder is written beside the program. A sniplite.exe without the zip is not slowed
+ * by any of this: the last 22 bytes of the file are looked at once. */
 
 typedef struct {
     HANDLE f;
-    uint64_t dir, shift; /* where the zip's directory is in the file; what to add to the places it names */
-    uint32_t dir_bytes, count;
+    uint64_t at; /* where the zip begins in the file */
+    uint32_t bytes;
 } Pack;
 
 static bool read_at(HANDLE f, uint64_t at, void *buf, uint32_t n)
@@ -433,7 +448,7 @@ static bool pack_open(Pack *k)
 {
     WCHAR exe[MAX_PATH * 2];
     LARGE_INTEGER size;
-    uint8_t end[22]; /* a zip's last record, when it has no comment */
+    uint8_t end[22];
     k->f = GetModuleFileNameW(NULL, exe, COUNTOF(exe))
                ? CreateFileW(exe, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, 0, NULL)
                : INVALID_HANDLE_VALUE;
@@ -441,11 +456,10 @@ static bool pack_open(Pack *k)
         return false;
     if (GetFileSizeEx(k->f, &size) && size.QuadPart > 22 && read_at(k->f, (uint64_t)size.QuadPart - 22, end, 22) &&
         rd32(end) == 0x06054b50) {
-        k->count = rd16(end + 10);
-        k->dir_bytes = rd32(end + 12);
-        k->dir = (uint64_t)size.QuadPart - 22 - k->dir_bytes;
-        k->shift = k->dir - rd32(end + 16);
-        if (k->dir_bytes < (uint64_t)size.QuadPart - 22 && rd32(end + 16) <= k->dir)
+        uint64_t zip = (uint64_t)rd32(end + 16) + rd32(end + 12) + 22; /* all of it: up to its directory, that, the last record */
+        k->at = (uint64_t)size.QuadPart - zip;
+        k->bytes = (uint32_t)zip;
+        if (zip < (uint64_t)size.QuadPart && zip < 0x40000000)
             return true;
     }
     CloseHandle(k->f);
@@ -464,76 +478,19 @@ bool ocr_packed(void)
     return known == 2;
 }
 
-/* one file of the zip, beside the program: checked if it is one of the module's, written, given its name */
-static bool pack_write(const WCHAR *name, const uint8_t *data, uint32_t n)
-{
-    WCHAR path[MAX_PATH * 2], tmp[MAX_PATH * 2];
-    uint8_t sha[32];
-    for (int i = 0; i < COUNTOF(kParts); i++)
-        if (!lstrcmpiW(name, kParts[i].name)) {
-            sha256(data, n, sha);
-            if (n != kParts[i].size || memcmp(sha, kParts[i].sha, 32))
-                return false;
-        }
-    if (!part_path(name, L"", path, COUNTOF(path)) || !part_path(name, L".part", tmp, COUNTOF(tmp)))
-        return false;
-    HANDLE h = CreateFileW(tmp, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-    DWORD wrote = 0;
-    bool ok = h != INVALID_HANDLE_VALUE && WriteFile(h, data, n, &wrote, NULL) && wrote == n;
-    if (h != INVALID_HANDLE_VALUE)
-        CloseHandle(h);
-    if (!ok || !MoveFileExW(tmp, path, MOVEFILE_REPLACE_EXISTING)) {
-        DeleteFileW(tmp);
-        return false;
-    }
-    return true;
-}
-
 bool ocr_unpack(void)
 {
     Pack k;
-    WCHAR dir[MAX_PATH * 2];
     if (!pack_open(&k))
         return false;
-    ocr_dir(dir, COUNTOF(dir));
-    uint8_t *cd = mem_alloc(k.dir_bytes ? k.dir_bytes : 1);
-    bool ok = cd && read_at(k.f, k.dir, cd, k.dir_bytes) && (CreateDirectoryW(dir, NULL) || GetLastError() == ERROR_ALREADY_EXISTS);
-    const uint8_t *e = cd, *end = cd + k.dir_bytes;
-    for (uint32_t i = 0; ok && i < k.count; i++) {
-        if (e + 46 > end || rd32(e) != 0x02014b50) {
-            ok = false;
-            break;
-        }
-        uint32_t method = rd16(e + 10), csize = rd32(e + 20), usize = rd32(e + 24), nlen = rd16(e + 28), at = rd32(e + 42);
-        const char *name = (const char *)e + 46;
-        e += 46 + nlen + rd16(e + 30) + rd16(e + 32);
-        if (e > end) {
-            ok = false;
-            break;
-        }
-        /* only plain files right in "ocr/": nothing that could be written anywhere else */
-        WCHAR file[64];
-        bool plain = nlen > 4 && nlen < 4 + COUNTOF(file) && !memcmp(name, "ocr/", 4) && name[4] != '.';
-        for (uint32_t c = 4; plain && c < nlen; c++) {
-            char ch = name[c];
-            plain = ch > 32 && ch < 127 && ch != '/' && ch != '\\' && ch != ':';
-            file[c - 4] = (WCHAR)ch;
-        }
-        if (!plain)
-            continue; /* the folder's own entry, or something not expected here */
-        file[nlen - 4] = 0;
-        uint8_t head[30], *in = mem_alloc(csize ? csize : 1), *out = method ? mem_alloc(usize ? usize : 1) : in;
-        ok = in && out && read_at(k.f, k.shift + at, head, 30) && rd32(head) == 0x04034b50 &&
-             read_at(k.f, k.shift + at + 30 + rd16(head + 26) + rd16(head + 28), in, csize) &&
-             (method == 0 ? csize == usize : method == 8 && inflate(in, csize, out, usize)) && pack_write(file, out, usize);
-        if (out != in)
-            mem_free(out);
-        mem_free(in);
-    }
-    mem_free(cd);
+    uint8_t *zip = mem_alloc(k.bytes);
+    bool ok = zip && read_at(k.f, k.at, zip, k.bytes) && zip_unpack(zip, k.bytes) == OCR_GET_OK;
+    mem_free(zip);
     CloseHandle(k.f);
-    return ok && ocr_installed();
+    return ok;
 }
+
+/* ---- removed ---- */
 
 bool ocr_remove(void)
 {
@@ -546,6 +503,15 @@ bool ocr_remove(void)
             ok = false;
         if (part_path(kParts[i].name, L".part", path, COUNTOF(path)))
             DeleteFileW(path);
+    }
+    WIN32_FIND_DATAW fd; /* the notice and the licenses that came with them */
+    HANDLE find = part_path(L"*.txt", L"", path, COUNTOF(path)) ? FindFirstFileW(path, &fd) : INVALID_HANDLE_VALUE;
+    if (find != INVALID_HANDLE_VALUE) {
+        do {
+            if (part_path(fd.cFileName, L"", path, COUNTOF(path)))
+                DeleteFileW(path);
+        } while (FindNextFileW(find, &fd));
+        FindClose(find);
     }
     RemoveDirectoryW(dir); /* stays when something else is in it */
     return ok;

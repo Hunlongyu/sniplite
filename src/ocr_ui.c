@@ -63,6 +63,7 @@ bool ov_active(void);
 extern const int32_t kTbOrder[], kTbPlain[]; /* the toolbar with and without the text buttons (ov_base.S) */
 extern const int32_t *tb_order;
 extern int32_t tb_count;
+extern uint32_t ovp_scale_key; /* what the overlay's table of sizes was made for (ov_paint.S) */
 
 uint8_t ocr_panel_on; /* read by refresh(): call ocr_follow() */
 uint8_t ocr_there;
@@ -82,6 +83,7 @@ void ocr_refresh(void)
     ocr_there = ocr_installed() || ocr_packed();
     tb_order = ocr_there ? kTbOrder : kTbPlain;
     tb_count = TB_ITEMS - (ocr_there ? 0 : 2);
+    ovp_scale_key = ~0u; /* that table has the bar's width, counted from the old order */
 }
 
 static void helper_drop(void)

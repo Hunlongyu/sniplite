@@ -14,6 +14,10 @@ rem The module is taken from build\ocr: let build\sniplite.exe download it once 
 rem it checks every file against the hashes in src\ocr_get.c). The module is the work of others, so
 rem their licenses go with it, fetched from where they publish them. Nothing here is a program of its
 rem own: copy, and the tar and curl that come with Windows.
+rem
+rem The zip is left in build\sniplite_ocr.zip. Settings downloads such a zip from the project's
+rem releases, where one is published under a tag of its own (ocr-1): not with every version, only
+rem when the module changes, and then its tag and size are written in src\ocr_get.c.
 setlocal
 cd /d "%~dp0"
 if not exist build\sniplite.exe (echo build\sniplite.exe is missing: run build.bat first & exit /b 1)
@@ -43,7 +47,7 @@ set RAW=https://raw.githubusercontent.com
 "%CURL%" -sfL -o %Z%\ocr\LICENSE-PaddleOCR.txt %RAW%/PaddlePaddle/PaddleOCR/main/LICENSE || goto :nolicense
 "%TAR%" -a -c -f %D%\ocr.zip -C %Z% ocr || exit /b 1
 copy /b /y build\sniplite.exe + %D%\ocr.zip %D%\sniplite_%V%_portable_with_OCR_x64.exe >nul || exit /b 1
-del %D%\ocr.zip
+move /y %D%\ocr.zip build\sniplite_ocr.zip >nul
 rmdir /s /q %Z%
 
 for %%f in (%D%\*) do echo %%~nxf  %%~zf bytes

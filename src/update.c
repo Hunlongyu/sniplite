@@ -4,7 +4,6 @@
  * then at /releases/download/<tag>/sniplite_win_setup_amd64.exe.
  * WinHTTP is loaded on demand and uses the system proxy settings. */
 #include "update.h"
-#include "install.h"
 #include <winhttp.h>
 
 #ifndef WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY
@@ -267,17 +266,38 @@ bool http_fetch(const WCHAR *host, const WCHAR *path, const WCHAR *headers, DWOR
     return ok;
 }
 
+/* this program's folder, ending in a backslash; 0 when it cannot be told */
+static int own_dir(WCHAR *dir)
+{
+    DWORD n = GetModuleFileNameW(NULL, dir, MAX_PATH);
+    if (n >= MAX_PATH)
+        n = 0;
+    while (n > 0 && dir[n - 1] != L'\\')
+        n--;
+    dir[n] = 0;
+    return (int)n;
+}
+
 bool update_installed_copy(void)
 {
-    WCHAR me[MAX_PATH], dir[MAX_PATH];
-    DWORD n = GetModuleFileNameW(NULL, me, MAX_PATH);
-    WCHAR *sl = n && n < MAX_PATH ? wcsrchr(me, L'\\') : NULL;
-    if (!sl || !ExpandEnvironmentStringsW(INSTALL_DIR, dir, MAX_PATH) || dir[0] == L'%')
+    WCHAR com[MAX_PATH + 16];
+    if (!own_dir(com))
         return false;
-    *sl = 0;
-    GetLongPathNameW(me, me, MAX_PATH); /* 8.3 names vs long names */
-    GetLongPathNameW(dir, dir, MAX_PATH);
-    return !lstrcmpiW(me, dir);
+    lstrcatW(com, L"sniplite.com");
+    return GetFileAttributesW(com) != INVALID_FILE_ATTRIBUTES;
+}
+
+void update_setup_cmd(Str *cmd, const WCHAR *setup)
+{
+    WCHAR arg[MAX_PATH + 8] = L"/D=";
+    int n = own_dir(arg + 3);
+    str_add_quoted(cmd, setup);
+    str_add(cmd, L" /update");
+    if (n > 1) {
+        arg[3 + n - 1] = 0; /* without the last backslash */
+        str_add(cmd, L" ");
+        str_add_quoted(cmd, arg);
+    }
 }
 
 int update_check_main(void)

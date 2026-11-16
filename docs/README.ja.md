@@ -128,3 +128,11 @@
 ## ライセンス
 
 [MIT](../LICENSE)
+
+## サードパーティのオープンソース
+
+sniplite 本体は Windows 標準のシステムライブラリだけを使います。オプションの文字認識モジュールはほかの方々の成果物で、変更を加えず、ライセンスとともに配布しています（ライセンスはモジュールの `ocr` フォルダーと[モジュールのリリースページ](https://github.com/MrTangLuyao/sniplite/releases/tag/ocr-1)にあります）。
+
+- [ONNX Runtime](https://github.com/microsoft/onnxruntime) 1.26.0、Copyright (c) Microsoft Corporation、MIT ライセンス
+- [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) の PP-OCRv6 モデル、Copyright (c) PaddlePaddle Authors、Apache License 2.0
+- モデルの ONNX 形式は [RapidOCR](https://github.com/RapidAI/RapidOCR) によるもの、Apache License 2.0

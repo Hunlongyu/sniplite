@@ -128,3 +128,11 @@
 ## 授權
 
 [MIT](../LICENSE)
+
+## 第三方開源元件
+
+sniplite 本身只用到 Windows 內建的系統程式庫。選用的文字辨識模組是他人的成果，原樣提供，並附帶它們的授權條款（在模組的 `ocr` 資料夾裡，也在[模組的發布頁](https://github.com/MrTangLuyao/sniplite/releases/tag/ocr-1)）：
+
+- [ONNX Runtime](https://github.com/microsoft/onnxruntime) 1.26.0，Copyright (c) Microsoft Corporation，MIT 授權
+- [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) 的 PP-OCRv6 模型，Copyright (c) PaddlePaddle Authors，Apache 2.0 授權
+- 模型的 ONNX 格式來自 [RapidOCR](https://github.com/RapidAI/RapidOCR)，Apache 2.0 授權

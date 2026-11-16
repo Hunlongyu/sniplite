@@ -39,9 +39,12 @@ bool update_download(const WCHAR *tag, WCHAR *path, int cap, void (*progress)(in
 bool http_fetch(const WCHAR *host, const WCHAR *path, const WCHAR *headers, DWORD *status,
                 bool (*sink)(const void *data, DWORD n, void *ctx), void *ctx);
 
-/* Is this program running from the folder the installer uses? Only that copy can
- * be updated in place; a copy elsewhere (e.g. built from source) is left alone. */
+/* An installed copy has sniplite.com beside sniplite.exe, in whatever folder was chosen:
+ * the installer always writes both. The portable program is sniplite.exe by itself. */
 bool update_installed_copy(void);
+/* The command that has the downloaded installer replace this copy, where it is:
+ * "<setup>" /update "/D=<this program's folder>" */
+void update_setup_cmd(Str *cmd, const WCHAR *setup);
 
 /* `sniplite.exe --update-check`: if a newer release exists, tell the background process. */
 int update_check_main(void);

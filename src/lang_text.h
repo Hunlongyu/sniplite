@@ -208,15 +208,6 @@ X(DOWNLOADING,
 X(UPDATED,
   "已更新到 %s\n", "已更新到 %s\n", "Updated to %s\n", "%s に更新しました\n", "업데이트 완료: %s\n",
   "Mis à jour vers %s\n", "Auf %s aktualisiert\n", "Actualizado a %s\n")
-X(PORTABLE,
-  "有新版本 %s。这份 sniplite 不是用安装包装的，请到 GitHub 下载\n",
-  "有新版本 %s。這份 sniplite 不是用安裝程式裝的，請到 GitHub 下載\n",
-  "New version %s. This copy was not set up by the installer: get it from GitHub\n",
-  "新バージョン %s があります。この sniplite はインストーラー版ではないため、GitHub から入手してください\n",
-  "새 버전 %s. 이 sniplite는 설치 프로그램으로 설치되지 않았습니다. GitHub에서 받으세요\n",
-  "Nouvelle version %s, à télécharger sur GitHub (copie sans installeur)\n",
-  "Neue Version %s. Diese Kopie stammt nicht vom Installer: bitte von GitHub herunterladen\n",
-  "Nueva versión %s. Esta copia no se instaló con el instalador: descárgala en GitHub\n")
 X(NET_FAILED,
   "检查失败，请检查网络\n", "檢查失敗，請確認網路\n", "Check failed. Is the network up?\n",
   "確認に失敗しました。ネットワークを確認してください\n", "확인 실패. 네트워크를 확인하세요\n",
@@ -271,6 +262,9 @@ X(S_SUB,
 X(S_PATH,
   "安装到 %s", "安裝到 %s", "Install to %s", "インストール先：%s", "설치 위치: %s", "Installer dans %s",
   "Installieren in %s", "Instalar en %s")
+X(S_BROWSE,
+  "更改位置…", "變更位置…", "Change folder…", "場所を変更…", "위치 변경…", "Changer le dossier…",
+  "Ordner ändern…", "Cambiar carpeta…")
 X(S_AUTOSTART,
   "开机启动", "開機啟動", "Start with Windows", "Windows 起動時に実行", "Windows 시작 시 실행",
   "Lancer au démarrage", "Mit Windows starten", "Iniciar con Windows")
@@ -676,10 +670,6 @@ X(U_CHECKING, "正在检查...", "正在檢查...", "Checking...", "確認中...
   "Suche läuft...", "Buscando...")
 X(U_CHECK_FAILED, "检查失败。", "檢查失敗。", "Check failed.", "確認に失敗しました。", "확인 실패.",
   "Échec de la recherche.", "Suche fehlgeschlagen.", "Error al buscar.")
-X(U_NEWER_MANUAL,
-  "有新版本：%s，请到 GitHub 下载。", "有新版本：%s，請到 GitHub 下載。", "New version %s on GitHub.",
-  "新バージョン %s（GitHub で入手）", "새 버전 %s (GitHub에서 받기)", "Nouvelle version %s sur GitHub.",
-  "Neue Version %s auf GitHub.", "Nueva versión %s en GitHub.")
 X(U_NEWER,
   "有新版本：%s", "有新版本：%s", "New version: %s", "新バージョン：%s", "새 버전: %s",
   "Nouvelle version : %s", "Neue Version: %s", "Nueva versión: %s")
@@ -909,14 +899,14 @@ X(O_WRITE_FAILED, "无法写入程序所在的文件夹。", "無法寫入程式
   "프로그램 폴더에 쓸 수 없습니다.", "Impossible d'écrire dans le dossier du programme.",
   "In den Programmordner kann nicht geschrieben werden.", "No se puede escribir en la carpeta del programa.")
 X(O_HINT,
-  "可选模块，下载约 12 MB，装好后占 22 MB。用来识别截图里的文字和表格，全部在本机完成，不联网。\n模型是 PaddleOCR PP-OCRv6，运行库是 ONNX Runtime，分别从 ModelScope 和 PyPI 下载。",
-  "選用模組，下載約 12 MB，安裝後佔 22 MB。用來辨識截圖裡的文字和表格，全部在本機完成，不連網。\n模型是 PaddleOCR PP-OCRv6，執行庫是 ONNX Runtime，分別從 ModelScope 和 PyPI 下載。",
-  "Optional: a 12 MB download, 22 MB installed. It reads the text and tables in a capture, entirely on this computer.\nModels: PaddleOCR PP-OCRv6. Runtime: ONNX Runtime. Downloaded from ModelScope and PyPI.",
-  "オプション: ダウンロード約 12 MB、導入後 22 MB。キャプチャ内の文字と表を、このパソコンだけで読み取ります。\nモデルは PaddleOCR PP-OCRv6、ランタイムは ONNX Runtime。ModelScope と PyPI から取得します。",
-  "선택 모듈: 다운로드 약 12 MB, 설치 후 22 MB. 캡처의 글자와 표를 이 컴퓨터에서만 읽습니다.\n모델은 PaddleOCR PP-OCRv6, 런타임은 ONNX Runtime이며 ModelScope와 PyPI에서 받습니다.",
-  "Facultatif : 12 Mo à télécharger, 22 Mo installés. Lit le texte et les tableaux d'une capture, entièrement sur cet ordinateur.\nModèles : PaddleOCR PP-OCRv6. Moteur : ONNX Runtime. Sources : ModelScope et PyPI.",
-  "Optional: 12 MB Download, 22 MB installiert. Liest Text und Tabellen einer Aufnahme, vollständig auf diesem Computer.\nModelle: PaddleOCR PP-OCRv6. Laufzeit: ONNX Runtime. Geladen von ModelScope und PyPI.",
-  "Opcional: 12 MB de descarga, 22 MB instalado. Lee el texto y las tablas de una captura, todo en este equipo.\nModelos: PaddleOCR PP-OCRv6. Motor: ONNX Runtime. Se descargan de ModelScope y PyPI.")
+  "可选模块，下载约 12 MB，装好后占 22 MB。用来识别截图里的文字和表格，全部在本机完成，不联网。\n模型是 PaddleOCR PP-OCRv6，运行库是 ONNX Runtime，从 sniplite 的 GitHub 发布页下载，附带它们的许可证。",
+  "選用模組，下載約 12 MB，安裝後佔 22 MB。用來辨識截圖裡的文字和表格，全部在本機完成，不連網。\n模型是 PaddleOCR PP-OCRv6，執行庫是 ONNX Runtime，從 sniplite 的 GitHub 發布頁下載，附帶它們的授權條款。",
+  "Optional: a 12 MB download, 22 MB installed. It reads the text and tables in a capture, entirely on this computer.\nModels: PaddleOCR PP-OCRv6. Runtime: ONNX Runtime. Downloaded from sniplite's releases on GitHub, with their licenses.",
+  "オプション: ダウンロード約 12 MB、導入後 22 MB。キャプチャ内の文字と表を、このパソコンだけで読み取ります。\nモデルは PaddleOCR PP-OCRv6、ランタイムは ONNX Runtime。sniplite の GitHub リリースから、ライセンスとともに取得します。",
+  "선택 모듈: 다운로드 약 12 MB, 설치 후 22 MB. 캡처의 글자와 표를 이 컴퓨터에서만 읽습니다.\n모델은 PaddleOCR PP-OCRv6, 런타임은 ONNX Runtime이며 sniplite의 GitHub 릴리스에서 라이선스와 함께 받습니다.",
+  "Facultatif : 12 Mo à télécharger, 22 Mo installés. Lit le texte et les tableaux d'une capture, entièrement sur cet ordinateur.\nModèles : PaddleOCR PP-OCRv6. Moteur : ONNX Runtime. Source : la page GitHub de sniplite, avec leurs licences.",
+  "Optional: 12 MB Download, 22 MB installiert. Liest Text und Tabellen einer Aufnahme, vollständig auf diesem Computer.\nModelle: PaddleOCR PP-OCRv6. Laufzeit: ONNX Runtime. Geladen von der GitHub-Seite von sniplite, samt Lizenzen.",
+  "Opcional: 12 MB de descarga, 22 MB instalado. Lee el texto y las tablas de una captura, todo en este equipo.\nModelos: PaddleOCR PP-OCRv6. Motor: ONNX Runtime. Se descargan de la página de sniplite en GitHub, con sus licencias.")
 
 /* ---- the save dialog (image.S); | stands for the separator between filter parts ---- */
 X(SAVE_FILTER,

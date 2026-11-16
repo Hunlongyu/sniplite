@@ -93,18 +93,14 @@ static int cmd_update(int ac, WCHAR **av, bool json)
     update_check(&r);
     bool installed = false;
     int code = r.state == UPD_ERROR ? EXIT_FAIL : EXIT_OK;
-    bool portable = r.state == UPD_NEWER && !update_installed_copy(); /* the installer would not touch it */
-    if (portable && install) {
-        code = EXIT_FAIL;
-    } else if (install && r.state == UPD_NEWER) {
+    if (install && r.state == UPD_NEWER) {
         WCHAR setup[MAX_PATH];
         if (!json)
             print(T(DOWNLOADING), false);
         code = EXIT_FAIL;
         if (update_download(r.tag, setup, MAX_PATH, NULL, NULL)) {
             Str cmd = {0};
-            str_add_quoted(&cmd, setup);
-            str_add(&cmd, L" /update");
+            update_setup_cmd(&cmd, setup);
             STARTUPINFOW si = {sizeof si};
             PROCESS_INFORMATION pi;
             if (cmd.p && CreateProcessW(setup, cmd.p, NULL, NULL, FALSE, 0, NULL, NULL, &si, &pi)) {
@@ -125,15 +121,11 @@ static int cmd_update(int ac, WCHAR **av, bool json)
     if (json) {
         str_addf(&out, L"{\"state\":\"%s\",\"current\":\"%s\",\"latest\":\"%s\"", kState[r.state],
                  SNIPLITE_VERSION, r.tag);
-        if (portable)
-            str_add(&out, L",\"portable\":true");
         if (install)
             str_addf(&out, L",\"installed\":%s", installed ? L"true" : L"false");
         str_add(&out, L"}\n");
     } else if (installed) {
         str_addf(&out, T(UPDATED), r.tag);
-    } else if (portable) {
-        str_addf(&out, T(PORTABLE), r.tag);
     } else if (code != EXIT_OK) {
         str_add(&out, r.state == UPD_ERROR ? T(NET_FAILED) : T(UPD_FAILED));
     } else if (r.state == UPD_NEWER) {

@@ -51,6 +51,7 @@ static struct {
     bool reopen;     /* the language changed: show the window again, in that language */
     bool ocr_busy;   /* the text recognition module is being downloaded */
     bool ocr_auto;   /* opened to download it: begin at once */
+    bool portable;   /* the program by itself, not installed */
     volatile LONG ocr_cancel;
     POINT at;        /* where it was */
 } S;
@@ -553,7 +554,7 @@ static DWORD WINAPI check_thread(void *p)
 
 static void upd_check(void)
 {
-    if (S.busy)
+    if (S.busy || S.portable)
         return;
     upd_buttons(false, false);
     upd_status(T(U_CHECKING));
@@ -570,11 +571,6 @@ static void upd_checked(int state)
     switch (state) {
     case UPD_NEWER:
         lstrcpynW(S.tag, g_upd.tag, COUNTOF(S.tag));
-        if (!update_installed_copy()) { /* e.g. built from source: the installer would not touch it */
-            wsprintfW(t, T(U_NEWER_MANUAL), S.tag);
-            upd_status(t);
-            break;
-        }
         wsprintfW(t, T(U_NEWER), S.tag);
         upd_status(t);
         upd_buttons(true, true);
@@ -665,8 +661,7 @@ static void upd_fetched(bool ok)
     }
     upd_status(T(U_INSTALLING));
     Str cmd = {0};
-    str_add_quoted(&cmd, S.setup);
-    str_add(&cmd, L" /update");
+    update_setup_cmd(&cmd, S.setup);
     STARTUPINFOW si = {sizeof si};
     PROCESS_INFORMATION pi;
     HANDLE t = NULL;
@@ -715,7 +710,7 @@ static void ocr_show(void)
         lstrcpynW(t, T(O_STATE_NONE), COUNTOF(t));
     SetDlgItemTextW(o, IDC_O_STATE, t);
     SetDlgItemTextW(o, IDC_O_INSTALL, S.ocr_busy ? T(O_CANCEL_BTN) : T(O_INSTALL_BTN));
-    bool install = S.ocr_busy ? !S.ocr_cancel : !there, remove = !S.ocr_busy && there && !packed;
+    bool install = !S.portable && (S.ocr_busy ? !S.ocr_cancel : !there), remove = !S.portable && !S.ocr_busy && there && !packed;
     if ((!install && f == GetDlgItem(o, IDC_O_INSTALL)) || (!remove && f == GetDlgItem(o, IDC_O_REMOVE)))
         SendMessageW(S.dlg, WM_NEXTDLGCTL, (WPARAM)S.tabs, TRUE); /* keep Esc/Tab working */
     EnableWindow(GetDlgItem(o, IDC_O_INSTALL), install);
@@ -744,7 +739,7 @@ static void ocr_install(void)
         ocr_show();
         return;
     }
-    if (ocr_installed())
+    if (S.portable || ocr_installed())
         return;
     S.ocr_cancel = 0;
     HANDLE t = CreateThread(NULL, 0, ocr_thread, NULL, 0, NULL);
@@ -859,6 +854,10 @@ static void page_command(HWND page, int id, int code, HWND ctl)
         if (S.shell_exec)
             S.shell_exec(S.dlg, NULL, L"explorer.exe", arg, NULL, SW_SHOWNORMAL);
         break;
+    case IDC_PROJECT:
+        if (S.shell_exec)
+            S.shell_exec(S.dlg, L"open", L"https://" UPDATE_HOST UPDATE_REPO, NULL, NULL, SW_SHOWNORMAL);
+        break;
     case IDC_U_CHECK:
         upd_check();
         break;
@@ -889,7 +888,7 @@ static void page_command(HWND page, int id, int code, HWND ctl)
             CheckDlgButton(page, IDC_TRAY, d.tray ? BST_CHECKED : BST_UNCHECKED);
             S.cfg.pin_top = d.pin_top;
             CheckDlgButton(page, IDC_PIN_TOP, d.pin_top ? BST_CHECKED : BST_UNCHECKED);
-            if (autostart_on() || autostart_set(true)) /* on by default */
+            if (!S.portable && (autostart_on() || autostart_set(true))) /* on by default */
                 CheckDlgButton(page, IDC_AUTOSTART, BST_CHECKED);
             if (lang_choice() != LG_AUTO && !S.busy) {
                 set_language(LG_AUTO);
@@ -947,6 +946,18 @@ static INT_PTR CALLBACK page_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
 }
 
 /* ---- main window ------------------------------------------------------------------------- */
+
+/* The portable version is the program by itself, not an installed copy (update.h). What only
+ * an installed copy offers is listed here and shown gray in the portable one. */
+static const struct {
+    unsigned char page;
+    unsigned char id; /* IDC_... */
+} kInstalledOnly[] = {
+    {PG_GENERAL, IDC_AUTOSTART}, /* a shortcut to a file that may be somewhere else tomorrow */
+    {PG_UPDATE, IDC_U_CHECK},    /* an update is the installer: it would make an installation of this copy */
+    {PG_OCR, IDC_O_INSTALL},     /* the module comes with the portable program or not at all */
+    {PG_OCR, IDC_O_REMOVE},
+};
 
 /* The controls with a text of their own (the .rc has the places and sizes only). */
 static const struct {
@@ -1023,6 +1034,9 @@ static INT_PTR CALLBACK main_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         }
         for (int i = 0; i < COUNTOF(kTexts); i++)
             SetDlgItemTextW(S.page[kTexts[i].page], kTexts[i].id, g_tr[kTexts[i].s]);
+        S.portable = !update_installed_copy();
+        for (int i = 0; S.portable && i < COUNTOF(kInstalledOnly); i++)
+            EnableWindow(GetDlgItem(S.page[kInstalledOnly[i].page], kInstalledOnly[i].id), FALSE);
         HWND g = S.page[PG_GENERAL], c = S.page[PG_CAPTURE];
         CheckDlgButton(g, IDC_AUTOSTART, autostart_on() ? BST_CHECKED : BST_UNCHECKED);
         CheckDlgButton(g, IDC_TRAY, S.cfg.tray ? BST_CHECKED : BST_UNCHECKED);
@@ -1037,7 +1051,9 @@ static INT_PTR CALLBACK main_proc(HWND h, UINT m, WPARAM wp, LPARAM lp)
         config_path(ini, MAX_PATH);
         SetDlgItemTextW(g, IDC_INI_PATH, ini);
         CheckRadioButton(c, IDC_DXGI, IDC_GDI, S.cfg.gdi ? IDC_GDI : IDC_DXGI);
-        SetDlgItemTextW(S.page[PG_ABOUT], IDC_VERSION, L"sniplite " SNIPLITE_VERSION);
+        SetDlgItemTextW(S.page[PG_ABOUT], IDC_VERSION,
+                        S.portable ? L"sniplite " SNIPLITE_VERSION L" portable" : L"sniplite " SNIPLITE_VERSION);
+        SetDlgItemTextW(S.page[PG_ABOUT], IDC_PROJECT, UPDATE_HOST UPDATE_REPO); /* the link is its own text */
         HWND u = S.page[PG_UPDATE];
         wsprintfW(t, T(U_VERSION), SNIPLITE_VERSION);
         SetDlgItemTextW(u, IDC_U_VERSION, t);
@@ -1182,8 +1198,9 @@ int settings_main(HINSTANCE inst, const WCHAR *page)
         AllowSetForegroundWindow(ASFW_ANY);
         bool asked = d && ipc_call(d, 2, argv, &r) == 0;
         str_free(&r);
-        WCHAR exe[MAX_PATH];
-        if (!asked && ExpandEnvironmentStringsW(INSTALL_DIR L"\\sniplite.exe", exe, MAX_PATH) && exe[0] != L'%') {
+        WCHAR exe[MAX_PATH]; /* this program's name: the new one has it now */
+        DWORD n = asked ? 0 : GetModuleFileNameW(NULL, exe, MAX_PATH);
+        if (n && n < MAX_PATH) {
             Str cmd = {0};
             str_add_quoted(&cmd, exe);
             str_add(&cmd, L" --settings update");

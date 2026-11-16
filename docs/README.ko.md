@@ -128,3 +128,11 @@
 ## 라이선스
 
 [MIT](../LICENSE)
+
+## 서드파티 오픈 소스
+
+sniplite 자체는 Windows에 기본으로 들어 있는 시스템 라이브러리만 씁니다. 선택 사항인 텍스트 인식 모듈은 다른 분들의 작업물이며, 수정 없이 라이선스와 함께 제공합니다(라이선스는 모듈의 `ocr` 폴더와 [모듈 릴리스 페이지](https://github.com/MrTangLuyao/sniplite/releases/tag/ocr-1)에 있습니다).
+
+- [ONNX Runtime](https://github.com/microsoft/onnxruntime) 1.26.0, Copyright (c) Microsoft Corporation, MIT 라이선스
+- [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR)의 PP-OCRv6 모델, Copyright (c) PaddlePaddle Authors, Apache License 2.0
+- 모델의 ONNX 형식은 [RapidOCR](https://github.com/RapidAI/RapidOCR)에서 제공, Apache License 2.0
