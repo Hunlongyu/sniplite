@@ -59,6 +59,7 @@ También hay dos versiones portables, sin instalación: `sniplite_<versión>_por
 | **Ctrl+Shift+C** | Copiar el texto de la selección |
 | **Ctrl+L** | Captura con desplazamiento: desplaza y se une sola |
 | **Esc** | Cancelar la captura |
+| **Flechas**, **W A S D** | Mover el cursor o la selección un píxel; con Shift, diez |
 | **Rueda** | Al capturar: elegir una ventana mayor o menor; sobre una imagen fijada: zoom |
 | **Doble clic** | Cerrar una imagen fijada |
 

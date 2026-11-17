@@ -59,6 +59,7 @@ There are two portable versions too, with nothing to install: `sniplite_<version
 | **Ctrl+Shift+C** | Copy the text of the selection |
 | **Ctrl+L** | Long screenshot: scroll, and it is stitched |
 | **Esc** | Cancel the capture |
+| **Arrow keys**, **W A S D** | Move the cursor or the selection by one pixel; with Shift, by ten |
 | **Wheel** | Capturing: pick a bigger or smaller window; on a pin: zoom |
 | **Double-click** | Close a pin |
 

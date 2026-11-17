@@ -65,11 +65,13 @@
 #define K_1 0x31                        /* = '1' */
 #define K_A 0x41                        /* = 'A' */
 #define K_C 0x43                        /* = 'C' */
+#define K_D 0x44                        /* = 'D' */
 #define K_L 0x4C                        /* = 'L' */
 #define K_O 0x4F                        /* = 'O' */
 #define K_S 0x53                        /* = 'S' */
 #define K_T 0x54                        /* = 'T' */
 #define K_V 0x56                        /* = 'V' */
+#define K_W 0x57                        /* = 'W' */
 #define K_Y 0x59                        /* = 'Y' */
 #define K_Z 0x5A                        /* = 'Z' */
 
@@ -788,7 +790,11 @@ ENDF
 
 /* ---- keyboard -------------------------------------------------------------------------- */
 
-/* void arrow_key(UINT vk, bool ctrl, bool shift) */
+/* void arrow_key(UINT vk, bool ctrl, bool shift): an arrow (on_key sends W A S D here as
+ * arrows too). Choosing, it moves the cursor; after that the picked annotation, else the
+ * selection. One pixel, or FAST_STEP with Shift. With Ctrl the selection's edge on the
+ * arrow's side goes out by a pixel; with Ctrl+Shift the opposite edge comes in. */
+#define FAST_STEP 10
 FUNC arrow_key
         PUSHREG rbx                     /* dx */
         PUSHREG rsi                     /* dy */
@@ -806,7 +812,13 @@ FUNC arrow_key
         cmove esi, eax
         cmp ecx, W_VK_DOWN
         cmove esi, r9d
-        cmp dword ptr [rip + O + OV_PHASE], PH_SELECT
+        test r8b, r8b                   /* Shift by itself: the long step */
+        jz 1f
+        test dl, dl
+        jnz 1f
+        imul ebx, ebx, FAST_STEP
+        imul esi, esi, FAST_STEP
+1:      cmp dword ptr [rip + O + OV_PHASE], PH_SELECT
         jne .Lak_edit
         lea rcx, [rsp + 32]             /* choosing: the arrows move the cursor */
         API GetCursorPos
@@ -831,7 +843,9 @@ FUNC arrow_key
         mov r9d, dword ptr [rip + O + OV_SEL + RC_R]
         mov r10d, dword ptr [rip + O + OV_SEL + RC_B]
         test dl, dl
-        jz .Lak_noctrl
+        jz .Lak_move
+        test r8b, r8b
+        jnz .Lak_shrink
         test ebx, ebx                   /* Ctrl: grow the edge in the arrow's direction */
         jns 1f
         dec eax
@@ -845,10 +859,8 @@ FUNC arrow_key
         jle .Lak_clip
         inc r10d
         jmp .Lak_clip
-.Lak_noctrl:
-        test r8b, r8b
-        jz .Lak_move
-        mov edx, r9d                    /* Shift: shrink, pulling the opposite edge in */
+.Lak_shrink:
+        mov edx, r9d                    /* Ctrl+Shift: shrink, pulling the opposite edge in */
         sub edx, eax
         test ebx, ebx
         jns 1f
@@ -873,7 +885,7 @@ FUNC arrow_key
         jle .Lak_clip
         inc ecx
         jmp .Lak_clip
-.Lak_move:                              /* plain: move, kept on screen */
+.Lak_move:                              /* no Ctrl: move by the step, kept on screen */
         mov r8d, r9d
         sub r8d, eax                    /* w */
         mov r11d, r10d
@@ -1024,8 +1036,23 @@ FUNC on_key
         call set_tool
         jmp .Lky_refresh
 .Lky_plain:
-        cmp ebx, K_C                    /* C while choosing: copy the color under the cursor */
+        cmp ebx, K_C
+        je .Lky_color
+        mov eax, W_VK_UP                /* W A S D: the arrows under the left hand */
+        cmp ebx, K_W
+        je 1f
+        mov eax, W_VK_LEFT
+        cmp ebx, K_A
+        je 1f
+        mov eax, W_VK_DOWN
+        cmp ebx, K_S
+        je 1f
+        mov eax, W_VK_RIGHT
+        cmp ebx, K_D
         jne .Lky_ret
+1:      mov ebx, eax
+        jmp .Lky_arrow
+.Lky_color:                             /* C while choosing: copy the color under the cursor */
         cmp dword ptr [rip + O + OV_PHASE], PH_SELECT
         jne .Lky_ret
         add rsp, 56

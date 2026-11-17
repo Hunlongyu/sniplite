@@ -644,6 +644,8 @@ X(SC_GROW,
   "Zone plus grande / petite", "Bereich größer / kleiner", "Zona mayor / menor")
 X(SC_NUDGE, "挪一个像素", "移動一個像素", "Move by one pixel", "1 ピクセル移動", "1픽셀 이동",
   "Déplacer d'un pixel", "Um 1 Pixel verschieben", "Mover un píxel")
+X(SC_NUDGE10, "挪十个像素", "移動十個像素", "Move by ten pixels", "10 ピクセル移動", "10픽셀 이동",
+  "Déplacer de dix pixels", "Um 10 Pixel verschieben", "Mover diez píxeles")
 X(SC_COLOR, "取颜色", "取色", "Pick a color", "色を取得", "색상 추출", "Prélever une couleur", "Farbe kopieren",
   "Copiar el color")
 X(K_CLICK, "单击", "點一下", "Click", "クリック", "클릭", "Clic", "Klick", "Clic")
@@ -659,7 +661,10 @@ X(K_DBL_ESC,
 X(K_WHEEL_CAP,
   "截图时滚轮", "截圖時滾輪", "Wheel while capturing", "キャプチャ中にホイール", "캡처 중 휠",
   "Molette pendant la capture", "Mausrad bei der Aufnahme", "Rueda al capturar")
-X(K_ARROWS, "方向键", "方向鍵", "Arrow keys", "矢印キー", "방향키", "Flèches", "Pfeiltasten", "Flechas")
+X(K_ARROWS, "方向键、W A S D", "方向鍵、W A S D", "Arrow keys, W A S D", "矢印キー、W A S D", "방향키, W A S D",
+  "Flèches, W A S D", "Pfeiltasten, W A S D", "Flechas, W A S D")
+X(K_SHIFT_SAME, "同时按住 Shift", "同時按住 Shift", "The same with Shift", "Shift を押しながら", "Shift를 누른 채",
+  "Les mêmes avec Shift", "Dieselben mit Shift", "Las mismas con Shift")
 X(K_C_CAP,
   "截图时按 C", "截圖時按 C", "C while capturing", "キャプチャ中に C", "캡처 중 C", "C pendant la capture",
   "C bei der Aufnahme", "C al capturar")

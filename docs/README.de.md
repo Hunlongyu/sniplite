@@ -59,6 +59,7 @@ Dazu gibt es zwei portable Versionen ohne Installation: `sniplite_<Version>_port
 | **Ctrl+Shift+C** | Text der Auswahl kopieren |
 | **Ctrl+L** | Scrollaufnahme: scrollen, sie wird zusammengesetzt |
 | **Esc** | Aufnahme abbrechen |
+| **Pfeiltasten**, **W A S D** | Cursor oder Auswahl um 1 Pixel verschieben, mit Shift um 10 |
 | **Mausrad** | Bei der Aufnahme: größeres oder kleineres Fenster wählen; auf einem Pin: zoomen |
 | **Doppelklick** | Pin schließen |
 

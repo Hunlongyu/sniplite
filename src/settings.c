@@ -424,6 +424,7 @@ static const Shortcut kShortcuts[] = {
     {1, S_SC_CLOSE, NULL, S_K_DBL_ESC, 0},
     {2, S_SC_GROW, NULL, S_K_WHEEL_CAP, 0},
     {2, S_SC_NUDGE, NULL, S_K_ARROWS, 0},
+    {2, S_SC_NUDGE10, NULL, S_K_SHIFT_SAME, 0},
     {2, S_SC_COLOR, NULL, S_K_C_CAP, 0},
 };
 
